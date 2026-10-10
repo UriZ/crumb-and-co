@@ -6,7 +6,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
-  body { overflow: hidden; background: #1b130e; }
+  body { overflow: hidden; background: #1b130e;
+         touch-action: none; overscroll-behavior: none; -webkit-user-select: none; }
   #app { position: fixed; inset: 0; user-select: none; }
   #c { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
 
@@ -606,7 +607,7 @@ function labelPlane(text, w, h, fg) {
   label.position.set(0, 0.26, 0.112);
   g.add(bag, crimp, label);
   makeHit(g, 0.55, 0.72, 0.5);
-  reg(g, 'flour', -1.75, 0xf7f2e4, 'powder');
+  reg(g, 'flour', -1.5, 0xf7f2e4, 'powder', 1.0);
 }
 /* eggs — crack open over the bowl */
 {
@@ -618,7 +619,7 @@ function labelPlane(text, w, h, fg) {
     g.add(egg);
   });
   makeHit(g, 0.5, 0.45, 0.45);
-  reg(g, 'eggs', -1.0, 0xf2c14e, 'crack');
+  reg(g, 'eggs', -0.8, 0xf2c14e, 'crack', 1.0);
 }
 /* butter — wrapped stick, one end unwrapped */
 {
@@ -631,7 +632,7 @@ function labelPlane(text, w, h, fg) {
   label.position.set(-0.07, 0.085, 0.108);
   g.add(wrap, stick, label);
   makeHit(g, 0.62, 0.4, 0.45);
-  reg(g, 'butter', -0.25, 0xf0c75e, 'cubes');
+  reg(g, 'butter', -0.1, 0xf0c75e, 'cubes', 1.0);
 }
 /* milk — glass bottle with foil cap */
 {
@@ -649,7 +650,7 @@ function labelPlane(text, w, h, fg) {
   cap.position.y = 0.53;
   g.add(bottle, milkIn, cap);
   makeHit(g, 0.45, 0.68, 0.45);
-  reg(g, 'milk', 0.55, 0xf7f4ec, 'stream');
+  reg(g, 'milk', 0.6, 0xf7f4ec, 'stream', 1.0);
 }
 /* sugar — glass jar, visible fill, steel lid */
 {
@@ -665,11 +666,11 @@ function labelPlane(text, w, h, fg) {
   label.position.set(0, 0.16, 0.152);
   g.add(jarGlass, fill, lid, label);
   makeHit(g, 0.5, 0.6, 0.45);
-  reg(g, 'sugar', 1.35, 0xeedfb8, 'granules');
+  reg(g, 'sugar', 1.3, 0xeedfb8, 'granules', 1.0);
 }
 /* flavor ingredients — front row; toss one in the bowl and the dough becomes that flavor */
 function regFlavor(g, name, x, dropColor, style, flav) {
-  reg(g, name, x, dropColor, style, 1.62);
+  reg(g, name, x, dropColor, style, 1.42);
   g.userData.flavor = FLAVORS[flav];
 }
 {
@@ -682,7 +683,7 @@ function regFlavor(g, name, x, dropColor, style, flav) {
     g.add(berry, leaf);
   });
   makeHit(g, 0.35, 0.3, 0.3);
-  regFlavor(g, 'strawberries', -1.4, 0xd16a74, 'cubes', 'strawberry');
+  regFlavor(g, 'strawberries', -1.2, 0xd16a74, 'cubes', 'strawberry');
 }
 {
   const g = new THREE.Group();
@@ -690,7 +691,7 @@ function regFlavor(g, name, x, dropColor, style, flav) {
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.022, 0.12), toon(0x5a3a28)); ridge.position.y = 0.07;
   g.add(bar, ridge);
   makeHit(g, 0.35, 0.26, 0.3);
-  regFlavor(g, 'chocolate', -0.72, 0x5a3a28, 'cubes', 'chocolate');
+  regFlavor(g, 'chocolate', -0.6, 0x5a3a28, 'cubes', 'chocolate');
 }
 {
   const g = new THREE.Group();
@@ -712,7 +713,7 @@ function regFlavor(g, name, x, dropColor, style, flav) {
   label.position.set(0, 0.07, 0.097);
   g.add(tin, fill, label);
   makeHit(g, 0.32, 0.3, 0.3);
-  regFlavor(g, 'matcha', 0.72, 0xa9bb84, 'powder', 'matcha');
+  regFlavor(g, 'matcha', 0.6, 0xa9bb84, 'powder', 'matcha');
 }
 {
   const g = new THREE.Group();
@@ -722,7 +723,7 @@ function regFlavor(g, name, x, dropColor, style, flav) {
   lid.position.y = 0.175;
   g.add(jar, lid);
   makeHit(g, 0.32, 0.3, 0.3);
-  regFlavor(g, 'caramel', 1.45, 0xd9a85e, 'stream', 'caramel');
+  regFlavor(g, 'caramel', 1.2, 0xd9a85e, 'stream', 'caramel');
 }
 /* food-coloring bottles: dye the dough (drop in the bowl) or re-tint a topping crate (drop on a crate) */
 let doughDye = null;
@@ -744,7 +745,7 @@ DYES.forEach((dy, i) => {
   cap.position.y = 0.19;
   g.add(body, cap);
   makeHit(g, 0.3, 0.3, 0.26);
-  reg(g, 'dye_' + dy.id, -2.35 + (i % 3) * 0.32, dy.c, null, i < 3 ? 1.28 : 1.58);
+  reg(g, 'dye_' + dy.id, -1.1 + i * 0.44, dy.c, null, 1.72);
   g.userData.dye = dy.c;
   dyeBottles.push(g);
 });
@@ -1155,13 +1156,24 @@ canvas.addEventListener('pointerdown', e => {
   try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointers */ }
   toNDC(e);
   ray.setFromCamera(ndc, camera);
+  if (sticky && dragging) {           /* second tap = place it here */
+    ray.ray.intersectPlane(groundPlane, groundHit);
+    if (ray.ray.intersectPlane(dragPlane, planeHit)) {
+      const dy0 = dragging.userData.dragY ?? 0.55;
+      dragging.position.set(planeHit.x, dy0, THREE.MathUtils.clamp(planeHit.z, -1.2, 1.6));
+      if (stage === 2 || stage === 4) highlightScoop(nearestScoop(dragging));
+    }
+    sticky = false;
+    doDrop();
+    return;
+  }
+  downPt = { x: e.clientX, y: e.clientY, t: performance.now() };
+  movedFar = false;
   if (stage === 2) {
     if (state === 'portion' || state === 'top') {
-      const pool = [];
-      if (s2.portions < 6) pool.push(...dough2.children);
-      const hit = ray.intersectObjects(pool, false).find(h => h.object.userData.group);
-      dragging = dyeAtPointer(e.clientX, e.clientY)
-        || (hit ? hit.object.userData.group : crateAtPointer(e.clientX, e.clientY));
+      const pool = [...crates, ...dyeBottles];
+      if (s2.portions < 6) pool.push(dough2);
+      dragging = pickNear(pool, e.clientX, e.clientY, 0.14, 0.075);
       if (dragging) {
         if (dragging.userData.topping) setHint(`<b>${dragging.userData.topping.label}</b> — sprinkle over a cookie`);
         else if (dragging.userData.dye) setHint('<b>Food coloring</b> — drop it on a cookie or a topping crate to tint it');
@@ -1172,10 +1184,9 @@ canvas.addEventListener('pointerdown', e => {
   }
   if (stage === 4) {
     if (state === 'frost') {
-      const pool = [...frostBases.flatMap(b2 => b2.children), ...milkF.children];
-      if (s4f.ready) pool.push(...potG.children);
-      const hit = ray.intersectObjects(pool, false).find(h => h.object.userData.group);
-      dragging = hit ? hit.object.userData.group : crateAtPointer(e.clientX, e.clientY);
+      const pool = [...frostBases, milkF, ...crates];
+      if (s4f.ready) pool.push(potG);
+      dragging = pickNear(pool, e.clientX, e.clientY, 0.14, 0.075);
       if (dragging) {
         if (dragging.userData.topping) setHint(`<b>${dragging.userData.topping.label}</b> — sprinkle over a cookie`);
         snd(340, 0.05, 'triangle', 0.07);
@@ -1188,19 +1199,18 @@ canvas.addEventListener('pointerdown', e => {
       if (ray.intersectObjects([dialHitMesh], false).length) setDial();
       else if (ray.intersectObjects(tray2.children, false).find(h => h.object.userData.group))
         setHint('Set the <b>dial</b> first — then load the tray');
-    } else if (state === 'load' || state === 'baking') {
-      const hits = ray.intersectObjects(tray2.children, false);
-      if (hits.find(h => h.object.userData.group)) { dragging = tray2; snd(340, 0.05, 'triangle', 0.07); }
+    } else if (state === 'load') {
+      if (pickNear([tray2], e.clientX, e.clientY, 0.15, 0.13)) { dragging = tray2; snd(340, 0.05, 'triangle', 0.07); }
+    } else if (state === 'baking') {
+      /* tap the tray to pull it out (dragging it toward you still works too) */
+      if (pickNear([tray2], e.clientX, e.clientY, 0.15, 0.16)) { dragging = tray2; snd(340, 0.05, 'triangle', 0.07); }
     }
     return;
   }
   if (stage === 5) {
     if (state === 'pack' || state === 'decor') {
-      const pool = scoops.flatMap(s => s.children);
-      const hits = ray.intersectObjects(pool, false);
-      const hit = hits.find(h => h.object.userData.group);
-      if (hit) {
-        const sc = hit.object.userData.group;
+      const sc = pickNear(scoops, e.clientX, e.clientY, 0.1, 0.06);
+      if (sc) {
         if (sc.userData.packed) { /* picking a packed cookie back up to rearrange */
           sc.userData.packed = false;
           s4.packed--;
@@ -1216,13 +1226,11 @@ canvas.addEventListener('pointerdown', e => {
     }
     return;
   }
+
   if (state === 'add') {
-    const dyeHit = dyeAtPointer(e.clientX, e.clientY);
-    const hits = ray.intersectObjects(
-      ingredients.filter(g => !g.userData.used).flatMap(g => g.children), false);
-    const hit = hits.find(h => h.object.userData.group);
-    if (dyeHit || hit) {
-      dragging = dyeHit || hit.object.userData.group;
+    const hit = pickNear(ingredients, e.clientX, e.clientY);
+    if (hit) {
+      dragging = hit;
       if (dragging.userData.dye) setHint('<b>Food coloring</b> — drop it in the bowl to dye the dough');
       snd(340, 0.05, 'triangle', 0.07);
     } else {
@@ -1232,11 +1240,10 @@ canvas.addEventListener('pointerdown', e => {
     }
   } else if (state === 'mix') {
     /* flavor twists can still go in before mixing */
-    const fl = ingredients.filter(i2 => (i2.userData.flavor || i2.userData.dye) && !i2.userData.used).flatMap(i2 => i2.children);
-    const dyeHit2 = dyeAtPointer(e.clientX, e.clientY);
-    const fh = ray.intersectObjects(fl, false).find(h => h.object.userData.group);
-    if (dyeHit2 || fh) {
-      dragging = dyeHit2 || fh.object.userData.group;
+    const fl = ingredients.filter(i2 => i2.userData.flavor || i2.userData.dye);
+    const fh = pickNear(fl, e.clientX, e.clientY);
+    if (fh) {
+      dragging = fh;
       snd(340, 0.05, 'triangle', 0.07);
     } else if (tool === 'spoon') {
       const b = bowlScreenPos();
@@ -1250,6 +1257,7 @@ canvas.addEventListener('pointerdown', e => {
 });
 canvas.addEventListener('pointermove', e => {
   if (dragging) {
+    if (downPt && Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y) > 14) movedFar = true;
     toNDC(e);
     ray.setFromCamera(ndc, camera);
     ray.ray.intersectPlane(groundPlane, groundHit);
@@ -1270,7 +1278,7 @@ canvas.addEventListener('pointermove', e => {
         ringMat.opacity = over ? 0.95 : 0.55;
       }
     }
-  } else if (!swirling) {
+  } else if (!swirling && !COARSE) {
     /* hover affordance: show a grab cursor over anything draggable right now */
     toNDC(e);
     ray.setFromCamera(ndc, camera);
@@ -1290,8 +1298,8 @@ canvas.addEventListener('pointermove', e => {
     swirlBank += Math.abs(dc); /* consumed at a capped rate in updateSim — pointer polling rate can't speed up mixing */
   }
 });
-function release() {
-  canvas.style.cursor = 'default';
+let sticky = false, downPt = null, movedFar = false;
+function doDrop() {
   if (dragging) {
     const g = dragging; dragging = null;
     if (stage === 2) {
@@ -1353,8 +1361,29 @@ function release() {
   }
   swirling = false;
 }
+function release() {
+  canvas.style.cursor = 'default';
+  /* A TAP (pressed and released without really moving) keeps the item in hand so the
+     next tap places it. Touch-dragging is unreliable across mobile browsers; this makes
+     every interaction playable with two taps instead. */
+  if (dragging === tray2 && stage === 3 && state === 'baking') { pullTray(); return; }
+  if (dragging && downPt && !movedFar && performance.now() - downPt.t < 700) {
+    sticky = true;
+    const what = dragging.userData.topping ? dragging.userData.topping.label
+      : dragging.userData.dye ? 'Food coloring'
+      : dragging.userData.name ? dragging.userData.name
+      : 'Got it';
+    setHint(`<b>${what}</b> in hand — now tap where it should go`);
+    return;
+  }
+  sticky = false;
+  doDrop();
+}
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
+/* keep mobile browsers from turning a drag into a scroll/zoom and cancelling our pointers */
+['touchstart', 'touchmove', 'touchend'].forEach(t =>
+  canvas.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false }));
 
 /* ---------------- main loop ---------------- */
 /* ================= stages 2-5 ================= */
@@ -1663,7 +1692,7 @@ function startStage2() {
   dough2.userData.mat.color.copy(doughCol());
   if (!dyesMoved) { /* the dye rack follows to the toppings counter */
     dyesMoved = true;
-    dyeBottles.forEach(b => { b.position.x += 8.6; b.userData.home.x += 8.6; });
+    dyeBottles.forEach(b => { b.position.x += 7.4; b.userData.home.x += 7.4; });
   }
   dollyTo(2, () => {
     state = 'portion';
@@ -1766,8 +1795,10 @@ function nearestIn(dragObj, objs, yOff, maxFrac = 0.1) {
 }
 /* pick the crate whose label is nearest the pointer on SCREEN — raycasting a dense
    tiered rack from an oblique camera picks the row behind far too often */
+const COARSE = matchMedia('(pointer: coarse)').matches;
 function pickByScreen(list, px, py, yOff, frac) {
-  let best = null, bd = sdim() * frac;
+  /* fingers need a far bigger catch radius than a mouse cursor */
+  let best = null, bd = COARSE ? Math.max(46, sdim() * frac * 1.9) : sdim() * frac;
   const wp = new THREE.Vector3();
   list.forEach(c => {
     if (c.userData.used) return;
@@ -1779,6 +1810,10 @@ function pickByScreen(list, px, py, yOff, frac) {
   return best;
 }
 const crateAtPointer = (px, py) => pickByScreen(crates, px, py, 0.14, 0.075);
+/* Crowded counter rows + a shallow camera means a 3D ray aimed at a back item clips the
+   row in front. Pick whatever is NEAREST the pointer on screen instead — occlusion-proof,
+   and it matches both what the eye expects and where a finger lands. */
+const pickNear = (list, px, py, yOff = 0.15, frac = 0.09) => pickByScreen(list, px, py, yOff, frac);
 /* small bottles hide behind the ingredient row from this camera — pick them by screen too */
 const dyeAtPointer = (px, py) => pickByScreen(dyeBottles, px, py, 0.1, 0.045);
 function tintScoop(scoop, dye) {
