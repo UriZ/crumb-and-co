@@ -1,0 +1,2756 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Crumb &amp; Co. Bakeshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Karla:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&family=Alfa+Slab+One&family=Yellowtail&family=Jost:wght@400;600;700&display=swap">
+<style>
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { overflow: hidden; background: #1b130e; }
+  #app { position: fixed; inset: 0; user-select: none; }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+
+  /* ------- HUD theme tokens ------- */
+  #app { --hud-bg: #2a1f16e6; --hud-ink: #f6ebda; --hud-soft: #cdb89e; --hud-line: #4d3a2b;
+         --acc: #f2b84b; --ok: #9db25f; --disp: 'Shrikhand', serif; --ui: 'Karla', sans-serif;
+         --chip-bg: #33261d; --radius: 14px; --bw: 1px; --shadow: 0 10px 26px -12px rgba(0,0,0,.6); }
+  #app[data-dir="B"] { --hud-bg: #fffdf8f0; --hud-ink: #3a3630; --hud-soft: #6f6758; --hud-line: #e4dccb;
+         --acc: #d9a441; --ok: #8fa377; --disp: 'Bricolage Grotesque', sans-serif; --ui: 'Figtree', sans-serif;
+         --chip-bg: #f6f3ec; --radius: 12px; --bw: 1px; --shadow: 0 10px 26px -18px rgba(80,68,44,.5); }
+  #app[data-dir="C"] { --hud-bg: #fffaf0; --hud-ink: #45291f; --hud-soft: #7a5a49; --hud-line: #45291f;
+         --acc: #d8474e; --ok: #74c0ad; --disp: 'Alfa Slab One', serif; --ui: 'Jost', sans-serif;
+         --chip-bg: #fffdf6; --radius: 14px; --bw: 2px; --shadow: 4px 4px 0 #45291f; }
+  #app[data-dir="M"] { --hud-bg: #f9f1e0; --hud-ink: #3f2d24; --hud-soft: #7a6250; --hud-line: #4a362a;
+         --acc: #b5484a; --ok: #6f9f87; --disp: 'Alfa Slab One', serif; --ui: 'Jost', sans-serif;
+         --chip-bg: #fdf7ea; --radius: 14px; --bw: 2px; --shadow: 3px 3px 0 rgba(58,42,34,.3); }
+
+  .panel { background: var(--hud-bg); border: var(--bw) solid var(--hud-line); border-radius: var(--radius);
+           box-shadow: var(--shadow); color: var(--hud-ink); font-family: var(--ui); backdrop-filter: blur(6px); }
+
+  .hud-top { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 10;
+             display: flex; align-items: center; justify-content: space-between; gap: 12px; pointer-events: none; }
+  .hud-top > * { pointer-events: auto; }
+  .brand { padding: 8px 16px 9px; display: flex; align-items: baseline; gap: 10px; }
+  .brand .logo { font-family: var(--disp); font-size: 19px; color: var(--acc); line-height: 1; }
+  .brand .stage { font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--hud-soft); }
+  #app[data-dir="C"] .brand .stage { font-family: 'Yellowtail', cursive; font-size: 19px; letter-spacing: 0; text-transform: none; color: var(--hud-soft); }
+
+  .themes { display: flex; gap: 6px; padding: 6px; }
+  .themes button { font-family: var(--ui); font-size: 12.5px; font-weight: 700; color: var(--hud-soft);
+                   background: transparent; border: var(--bw) solid transparent; border-radius: 9px;
+                   padding: 6px 11px; cursor: pointer; }
+  .themes button.on { background: var(--acc); color: var(--hud-bg); border-color: var(--hud-line); }
+  .themes button:hover:not(.on) { border-color: var(--hud-line); }
+
+  .checklist { position: absolute; top: 72px; left: 14px; z-index: 10; padding: 12px 14px;
+               display: flex; flex-direction: column; gap: 7px; min-width: 132px; }
+  .checklist .t { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--hud-soft); margin-bottom: 2px; }
+  .chip { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--hud-soft); }
+  .chip i { width: 16px; height: 16px; border-radius: 50%; border: var(--bw) solid var(--hud-line);
+            display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-style: normal; color: transparent; flex: none; }
+  .chip.done { color: var(--hud-ink); }
+  .chip.done i { background: var(--ok); color: #fff; border-color: var(--ok); }
+
+  .toolrail { position: absolute; left: 14px; bottom: 16px; z-index: 10; padding: 10px; display: flex; gap: 8px; }
+  .tool { width: 74px; padding: 8px 4px 7px; text-align: center; cursor: pointer;
+          background: var(--chip-bg); border: var(--bw) solid var(--hud-line); border-radius: 11px;
+          font-family: var(--ui); font-size: 11.5px; font-weight: 700; color: var(--hud-soft); transition: transform .12s; }
+  .tool:hover { transform: translateY(-2px); }
+  .tool .ic { display: block; font-size: 20px; line-height: 1.3; }
+  .tool.on { border-color: var(--acc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); color: var(--hud-ink); }
+
+  .hint { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 10;
+          padding: 9px 22px; font-size: 15px; font-weight: 700; white-space: nowrap; max-width: 92vw; }
+  #app[data-dir="C"] .hint { font-family: 'Yellowtail', cursive; font-size: 21px; font-weight: 400; }
+  .hint b { color: var(--acc); }
+
+  .ring { position: absolute; left: 50%; bottom: 122px; transform: translateX(-50%); z-index: 10;
+          width: 64px; height: 64px; border-radius: 50%; display: none; align-items: center; justify-content: center;
+          background: conic-gradient(var(--acc) calc(var(--p, 0) * 1%), color-mix(in srgb, var(--hud-line) 50%, transparent) 0); }
+  .ring::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--hud-bg); }
+  .ring span { position: relative; z-index: 1; font-family: var(--ui); font-size: 12px; font-weight: 700; color: var(--hud-ink); }
+
+  .doneCard { position: absolute; left: 50%; top: 27%; transform: translate(-50%, -46%) scale(.9); z-index: 20;
+              padding: 26px 34px; text-align: center; opacity: 0; pointer-events: none;
+              transition: opacity .35s, transform .35s; }
+  .doneCard.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+  .doneCard h2 { font-family: var(--disp); font-size: 30px; color: var(--acc); margin-bottom: 6px; }
+  .doneCard p { font-size: 14.5px; color: var(--hud-soft); margin-bottom: 16px; }
+  .doneCard button { font-family: var(--ui); font-weight: 700; font-size: 14px; cursor: pointer;
+                     background: var(--acc); color: var(--hud-bg); border: var(--bw) solid var(--hud-line);
+                     border-radius: 999px; padding: 9px 22px; }
+
+  .credit { position: absolute; right: 14px; bottom: 16px; z-index: 10; padding: 7px 13px;
+            font-size: 11.5px; color: var(--hud-soft); font-family: var(--ui); }
+  /* stage pips */
+  .pips { display: flex; gap: 4px; padding: 6px 10px; align-items: center; }
+  .pip { display: flex; align-items: center; gap: 6px; font-family: var(--ui); font-size: 12px; font-weight: 700;
+         color: var(--hud-soft); padding: 5px 10px; border-radius: 9px; }
+  .pip i { width: 10px; height: 10px; border-radius: 50%; border: var(--bw) solid var(--hud-line); font-style: normal; }
+  .pip.now { color: var(--hud-ink); background: var(--chip-bg); }
+  .pip.now i { background: var(--acc); }
+  .pip.done i { background: var(--ok); border-color: var(--ok); }
+
+  /* continue button */
+  .cont { position: absolute; right: 16px; bottom: 70px; z-index: 11;
+          font-family: var(--ui); font-weight: 700; font-size: 15px; cursor: pointer;
+          background: var(--acc); color: var(--hud-bg); border: var(--bw) solid var(--hud-line);
+          border-radius: 999px; padding: 11px 24px; box-shadow: var(--shadow); }
+  .cont:hover { transform: translateY(-2px); }
+
+  /* doneness bar */
+  .bakebar { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); z-index: 10;
+             padding: 12px 18px 14px; width: min(420px, 86vw); }
+  .bakebar label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .12em;
+                   text-transform: uppercase; color: var(--hud-soft); margin-bottom: 7px; }
+  .bakebar .bar { height: 14px; border-radius: 999px; position: relative; border: var(--bw) solid var(--hud-line);
+                  background: linear-gradient(90deg, #f0e3c0 0%, #e8c37e 42%, #c9853e 74%, #6b3a1c 91%, #33190b 100%); }
+  .bakebar .goldwin { position: absolute; top: -3px; left: 45%; width: 33%; height: 18px;
+                      border: 2px solid var(--ok); border-radius: 7px; background: rgba(111,159,135,.22); }
+  .bakebar .marker { position: absolute; top: -5px; left: 0%; width: 4px; height: 22px;
+                     border-radius: 2px; background: var(--hud-ink); }
+
+  /* ribbon swatches */
+  .swpanel { position: absolute; right: 16px; top: 76px; z-index: 10; padding: 12px 16px 14px; }
+  .swpanel label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .12em;
+                   text-transform: uppercase; color: var(--hud-soft); margin-bottom: 8px; }
+  .swpanel .row { display: flex; gap: 10px; }
+  .sw { width: 34px; height: 34px; border-radius: 9px; border: var(--bw) solid var(--hud-line);
+        cursor: pointer; transition: transform .12s;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-family: var(--ui); font-size: 17px; font-weight: 700; }
+  .sw:hover { transform: scale(1.12); }
+  .sw.sel { outline: 3px solid var(--acc); outline-offset: 2px; }
+
+  /* selection palettes (flavor / shape / toppings / decor) */
+  .palette { position: absolute; left: 14px; z-index: 10; padding: 10px 12px 12px; }
+  #flavorPanel { top: 238px; }
+  #shapePanel { top: 238px; }
+  #frostStylePanel { top: 238px; }
+  .pbtn i { box-shadow: inset 0 0 0 1px rgba(63,45,36,.35); }
+
+  /* stage navigation */
+  .navbtn { position: absolute; left: 16px; bottom: 16px; z-index: 11;
+            font-family: var(--ui); font-weight: 700; font-size: 14px; cursor: pointer;
+            background: var(--chip-bg); color: var(--hud-ink);
+            border: var(--bw) solid var(--hud-line); border-radius: 999px;
+            padding: 10px 20px; box-shadow: var(--shadow); }
+  .navbtn:hover { transform: translateY(-2px); }
+  .navbtn.fwd { left: auto; right: 16px; bottom: 70px; background: var(--acc); color: var(--hud-bg); }
+  .palette .t { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
+                text-transform: uppercase; color: var(--hud-soft); margin-bottom: 6px; }
+  .pbtn { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+          font-family: var(--ui); font-size: 12.5px; font-weight: 600; color: var(--hud-soft);
+          background: var(--chip-bg); border: var(--bw) solid var(--hud-line); border-radius: 9px;
+          padding: 5px 9px; margin: 3px 0; cursor: pointer; }
+  .pbtn i { width: 12px; height: 12px; border-radius: 50%; flex: none; border: 1px solid rgba(0,0,0,.2); }
+  .pbtn:hover { color: var(--hud-ink); }
+  .pbtn.on { color: var(--hud-ink); border-color: var(--acc);
+             box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 30%, transparent); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 6px; }
+  .cont.tie { position: static; width: 100%; margin-top: 12px; }
+
+  /* ---------- phones / small screens ---------- */
+  @media (max-width: 950px) {
+    .credit { display: none; }
+    #app { font-size: 15px; }
+    .brand { padding: 5px 10px 6px; }
+    .brand .logo { font-size: 14px; }
+    .brand .stage { font-size: 9.5px; letter-spacing: .1em; }
+    .pips { padding: 4px 5px; gap: 1px; }
+    .pip { font-size: 9.5px; padding: 3px 5px; gap: 4px; }
+    .pip i { width: 7px; height: 7px; }
+    .checklist { top: 54px; left: 8px; padding: 7px 9px; gap: 4px; min-width: 0; }
+    .checklist .t { font-size: 8.5px; letter-spacing: .1em; }
+    .chip { font-size: 10.5px; gap: 5px; }
+    .chip i { width: 11px; height: 11px; font-size: 7px; }
+    .palette { left: 8px; padding: 6px 8px 8px; }
+    #shapePanel, #frostStylePanel { top: 150px; }
+    .palette .t { font-size: 8.5px; margin-bottom: 4px; }
+    .pbtn { font-size: 10.5px; padding: 6px 7px; margin: 2px 0; gap: 5px; }
+    .pbtn i { width: 9px; height: 9px; }
+    .toolrail { left: 8px; bottom: 10px; padding: 6px; gap: 5px; }
+    .tool { width: 54px; font-size: 9.5px; padding: 6px 2px 5px; }
+    .tool .ic { font-size: 15px; }
+    .hint { bottom: 10px; font-size: 12px; padding: 7px 13px; max-width: 70vw;
+            white-space: normal; text-align: center; line-height: 1.3; }
+    .cont, .navbtn { font-size: 13px; padding: 10px 16px; }
+    .cont { right: 8px; bottom: 56px; }
+    .navbtn { left: 8px; bottom: 10px; }
+    .navbtn.fwd { right: 8px; bottom: 56px; left: auto; }
+    .toolrail ~ .navbtn { bottom: 76px; }
+    .bakebar { top: 54px; width: min(300px, 70vw); padding: 8px 12px 10px; }
+    .bakebar label { font-size: 8.5px; letter-spacing: .06em; }
+    .swpanel { right: 8px; top: 54px; padding: 8px 10px 10px; }
+    .swpanel label { font-size: 8.5px; margin-bottom: 5px; }
+    .sw { width: 28px; height: 28px; border-radius: 7px; font-size: 14px; }
+    .swpanel .row { gap: 6px; }
+    .ring { bottom: 96px; width: 52px; height: 52px; }
+    .doneCard { top: 30%; padding: 18px 22px; max-width: 80vw; }
+    .doneCard h2 { font-size: 21px; }
+    .doneCard p { font-size: 12px; margin-bottom: 12px; }
+    .doneCard button { font-size: 13px; padding: 9px 18px; }
+  }
+  /* the bakeshop counter is wide — ask for landscape on tall phones */
+  #rotate { display: none; }
+  @media (max-width: 950px) and (orientation: portrait) {
+    #rotate { display: flex; position: fixed; inset: 0; z-index: 60;
+              flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+              background: var(--ground); color: var(--hud-ink);
+              font-family: var(--ui); text-align: center; padding: 30px; }
+    #rotate .big { font-family: var(--disp); font-size: 26px; color: var(--acc); }
+    #rotate .ic { font-size: 44px; }
+    #rotate p { font-size: 14px; color: var(--hud-soft); max-width: 22em; line-height: 1.5; }
+  }
+</style>
+
+<div id="app" data-dir="M">
+  <canvas id="c"></canvas>
+
+  <div id="rotate"><span class="ic">↻</span><span class="big">Turn your phone</span><p>Crumb &amp; Co. runs along a long bakery counter — rotate to landscape for the full view.</p></div>
+
+  <div class="hud-top">
+    <div class="panel brand"><span class="logo">Crumb &amp; Co.</span><span class="stage" id="stageName">stage 1 · the dough</span></div>
+    <div class="panel pips" id="pips">
+      <span class="pip now" data-s="1"><i></i>Dough</span>
+      <span class="pip" data-s="2"><i></i>Mix-ins</span>
+      <span class="pip" data-s="3"><i></i>Bake</span>
+      <span class="pip" data-s="4"><i></i>Frost</span>
+      <span class="pip" data-s="5"><i></i>Pack</span>
+    </div>
+  </div>
+
+  <div class="panel checklist" id="checklist">
+    <span class="t">Recipe</span>
+    <span class="chip" data-i="flour"><i>✓</i>Flour</span>
+    <span class="chip" data-i="eggs"><i>✓</i>Eggs ×2</span>
+    <span class="chip" data-i="butter"><i>✓</i>Butter</span>
+    <span class="chip" data-i="milk"><i>✓</i>Milk</span>
+    <span class="chip" data-i="sugar"><i>✓</i>Sugar</span>
+    <span class="chip" data-i="twist"><i>✓</i>Flavor twist (optional)</span>
+  </div>
+
+  <button class="panel cont" id="cont" style="display:none">Continue</button>
+
+  <div class="panel palette" id="shapePanel" style="display:none">
+    <span class="t">Shape</span>
+    <div id="shapeRow"></div>
+  </div>
+  <div class="panel palette" id="frostStylePanel" style="display:none">
+    <span class="t">Finish</span>
+    <div id="frostStyleRow"></div>
+  </div>
+
+  <button class="panel navbtn" id="backBtn" style="display:none">← Back</button>
+  <button class="panel navbtn fwd" id="fwdBtn" style="display:none">Return →</button>
+
+  <div class="panel bakebar" id="bakebar" style="display:none">
+    <label>doneness — pull the tray out while the marker is in the green window</label>
+    <div class="bar"><span class="goldwin"></span><span class="marker" id="bakemarker"></span></div>
+  </div>
+
+  <div class="panel swpanel" id="swpanel" style="display:none">
+    <label>box</label>
+    <div class="row" id="boxRow"></div>
+    <label style="margin-top:9px">ribbon</label>
+    <div class="row" id="ribbonRow"></div>
+    <label style="margin-top:9px">sticker</label>
+    <div class="row" id="stickerRow"></div>
+    <label style="margin-top:9px">gift tag</label>
+    <div class="row" id="tagRow"></div>
+    <button class="pbtn" id="glitterBtn" style="margin-top:10px"><i style="background:#e8c87a"></i>Glitter dusting</button>
+    <button class="cont tie" id="tieBtn">Tie it up →</button>
+  </div>
+
+  <div class="panel toolrail">
+    <div class="tool on" data-tool="spoon"><span class="ic">🥄</span>Spoon</div>
+    <div class="tool" data-tool="mixer"><span class="ic">⚙️</span>Mixer</div>
+  </div>
+
+  <div class="ring" id="ring"><span id="ringTxt">0%</span></div>
+  <div class="panel hint" id="hint">Order from <b>Maren</b>: ½ dozen treats — drag the ingredients in; toss in <b>strawberries, chocolate…</b> to flavor the dough</div>
+
+  <div class="panel doneCard" id="doneCard">
+    <h2 id="cardTitle">Dough ready!</h2>
+    <p id="cardText">Next up: portion it out and add the chocolate chips.</p>
+    <button id="cardBtn">Continue</button>
+  </div>
+
+  <div class="panel credit">dough · mix-ins · bake · pack</div>
+</div>
+
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ---------------- themes ---------------- */
+const THEMES = {
+  A: { bg: 0x17100b, wall: '#2e2418', grout: '#3a2d1f', checker: null,
+       counter: 0x4a3628, edge: 0x5a442e, plank: 'rgba(0,0,0,.28)',
+       hemiSky: 0xffdcae, hemiGround: 0x241a14, hemiInt: 0.55,
+       keyColor: 0xffc98a, keyInt: 2.6, fillColor: 0xf2b84b, fillInt: 12,
+       windowGlass: 0x3d5170, windowGlow: 0.55, frame: 0x5a442e,
+       bowl: 0x7fa0ad, bowlRim: 0xa8c4cf, mixerBody: 0xead9b4, mixerKnob: 0xf2b84b,
+       ring: 0xf2b84b, outline: false },
+  B: { bg: 0xf6f3ec, wall: '#eceee6', grout: '#dcdfd3', checker: null,
+       counter: 0xd9c9a8, edge: 0xefe6d2, plank: 'rgba(94,74,42,.14)',
+       hemiSky: 0xffffff, hemiGround: 0xcfc4ae, hemiInt: 0.9,
+       keyColor: 0xfff2dd, keyInt: 2.2, fillColor: 0xfdf6e3, fillInt: 4,
+       windowGlass: 0xfdf3d8, windowGlow: 1.0, frame: 0xb8b2a4,
+       bowl: 0xf3efe6, bowlRim: 0xffffff, mixerBody: 0x5b7186, mixerKnob: 0xfdfbf6,
+       ring: 0xd9a441, outline: false },
+  C: { bg: 0xfaf1de, wall: '#fff8f0', grout: null, checker: '#bfe3d9',
+       counter: 0xd8474e, edge: 0xd9dadd, plank: 'rgba(255,255,255,.10)',
+       hemiSky: 0xffffff, hemiGround: 0xe8d9c0, hemiInt: 1.1,
+       keyColor: 0xfff6e8, keyInt: 3.0, fillColor: 0xfff0d8, fillInt: 5,
+       windowGlass: 0xcde9f5, windowGlow: 0.9, frame: 0x45291f,
+       bowl: 0xfffaf0, bowlRim: 0xd8474e, mixerBody: 0x74c0ad, mixerKnob: 0xd8474e,
+       ring: 0xe8a934, outline: true, ink: 0x45291f },
+  M: { bg: 0xefe6d2, wall: '#f3ead8', grout: null, checker: '#a8c5b4',
+       counter: 0xad4a47, edge: 0xd9dadd, plank: 'rgba(255,255,255,.08)',
+       hemiSky: 0xfff6e4, hemiGround: 0xcbb89d, hemiInt: 0.85,
+       keyColor: 0xffe9c4, keyInt: 2.3, fillColor: 0xffe4b8, fillInt: 4,
+       windowGlass: 0xd8e6ea, windowGlow: 0.8, frame: 0x6b4a35,
+       bowl: 0xf2ead9, bowlRim: 0xad4a47, mixerBody: 0xd79aa4, mixerKnob: 0xad4a47,
+       ring: 0xcf9f45, outline: true, ink: 0x3a2a22 },
+};
+
+/* ---------------- renderer / scene ---------------- */
+const app = document.getElementById('app');
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 50);
+camera.position.set(0, 1.85, 5.0);
+camera.lookAt(0, 0.55, -0.2);
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+/* toon gradient map */
+const gradData = new Uint8Array([90, 160, 235, 255]);
+const gradMap = new THREE.DataTexture(gradData, 4, 1, THREE.RedFormat);
+gradMap.minFilter = gradMap.magFilter = THREE.NearestFilter;
+gradMap.needsUpdate = true;
+const toon = (color, opts = {}) => new THREE.MeshToonMaterial({ color, gradientMap: gradMap, ...opts });
+
+/* ---------------- lights ---------------- */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x333333, 1);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 2);
+key.position.set(2.5, 4.5, 3.5);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.left = -4; key.shadow.camera.right = 4;
+key.shadow.camera.top = 4; key.shadow.camera.bottom = -2;
+key.shadow.bias = -0.002;
+scene.add(key);
+const fill = new THREE.PointLight(0xffffff, 8, 8, 1.8);
+fill.position.set(-2.2, 2.3, 0.5);
+scene.add(fill);
+
+/* ---------------- kitchen ---------------- */
+function wallTexture(t) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  const g = cv.getContext('2d');
+  if (t.checker) {
+    const s = 64;
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      g.fillStyle = (x + y) % 2 ? t.checker : t.wall;
+      g.fillRect(x * s, y * s, s, s);
+    }
+  } else {
+    g.fillStyle = t.wall; g.fillRect(0, 0, 512, 512);
+    g.strokeStyle = t.grout; g.lineWidth = 4;
+    for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 128, 0); g.lineTo(i * 128, 512); g.stroke(); }
+    for (let i = 0; i <= 6; i++) { g.beginPath(); g.moveTo(0, i * 85); g.lineTo(512, i * 85); g.stroke(); }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(13, 1.1);
+  return tex;
+}
+function counterTexture(t) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#' + new THREE.Color(t.counter).getHexString();
+  g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 300; i++) { /* formica speckle */
+    g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+    g.beginPath();
+    g.arc(Math.random() * 256, Math.random() * 256, 0.8 + Math.random() * 1.6, 0, 7);
+    g.fill();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(20, 1.6);
+  return tex;
+}
+const wallMat = new THREE.MeshToonMaterial({ gradientMap: gradMap });
+/* the world must extend well past the last station (pack sits near x=33) */
+const WORLD_W = 60, WORLD_CX = 15;
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_W, 4.6), wallMat);
+wall.position.set(WORLD_CX, 2.1, -1.75);
+wall.receiveShadow = true;
+scene.add(wall);
+
+const counterMat = toon(0xffffff);
+const counter = new THREE.Mesh(new THREE.BoxGeometry(WORLD_W, 0.9, 3.6), counterMat);
+counter.position.set(WORLD_CX, -0.45, 0);
+counter.receiveShadow = true;
+scene.add(counter);
+const edgeMat = toon(0xffffff);
+const edgeTrim = new THREE.Mesh(new THREE.BoxGeometry(WORLD_W, 0.07, 0.08), edgeMat);
+edgeTrim.position.set(WORLD_CX, -0.035, 1.8);
+scene.add(edgeTrim);
+
+/* window */
+const winGroup = new THREE.Group();
+const glassMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.15), glassMat);
+winGroup.add(glass);
+const frameMat = toon(0xffffff);
+const fw = 0.09;
+[[0, 0.62, 1.7, fw], [0, -0.62, 1.7, fw], [-0.79, 0, fw, 1.33], [0.79, 0, fw, 1.33], [0, 0, fw, 1.2], [0, 0, 1.55, fw]]
+  .forEach(([x, y, w, h]) => {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.07), frameMat);
+    bar.position.set(x, y, 0.02); winGroup.add(bar);
+  });
+winGroup.position.set(-2.55, 2.2, -1.7);
+scene.add(winGroup);
+
+/* shelf + jars, repeated along the counter */
+const shelfMat = toon(0xffffff);
+let shelf; /* first one kept for theme coloring */
+function addShelf(cx) {
+  const s = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.09, 0.55), shelfMat);
+  s.position.set(cx, 1.72, -1.42);
+  s.castShadow = false;
+  scene.add(s);
+  if (!shelf) shelf = s;
+  const jarColors = [0xe8dcc0, 0x5a3a28, 0xd9a441, 0xe8dcc0];
+  jarColors.forEach((c, i) => {
+    const jar = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.1, 0.3 + (i % 2) * 0.1, 14), toon(c, { transparent: true, opacity: 0.92 }));
+    body.position.y = (0.3 + (i % 2) * 0.1) / 2;
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 14), toon(0x8a6a48));
+    lid.position.y = 0.32 + (i % 2) * 0.1;
+    jar.add(body, lid);
+    jar.position.set(cx - 0.65 + i * 0.44, 1.77, -1.42);
+    jar.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    scene.add(jar);
+  });
+}
+[2.5, 10.5, 18.5, 26.5, 34.5].forEach(addShelf);
+
+/* ---------------- stand mixer ---------------- */
+const mixerG = new THREE.Group();
+const mixBodyMat = toon(0xffffff);
+const mBase = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.16, 0.62), mixBodyMat);
+mBase.position.set(-0.1, 0.08, 0);
+const mPillar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 1.05, 16), mixBodyMat);
+mPillar.position.set(-0.48, 0.66, 0);
+const mHead = new THREE.Group();
+const mHeadBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.62, 6, 14), mixBodyMat);
+mHeadBody.rotation.z = Math.PI / 2;
+mHead.add(mHeadBody);
+const knobMat = toon(0xffffff);
+const mKnob = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 14), knobMat);
+mKnob.rotation.x = Math.PI / 2;
+mKnob.position.set(-0.18, 0, 0.18);
+mHead.add(mKnob);
+mHead.position.set(-0.12, 1.22, 0);
+/* two proper beaters, like a real stand mixer */
+function makeBeater() {
+  const b = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.3, 8), toon(0xb9c1c9));
+  shaft.position.y = -0.15;
+  b.add(shaft);
+  const loopGeo = new THREE.TorusGeometry(0.052, 0.009, 8, 18);
+  for (let i = 0; i < 2; i++) {
+    const loop = new THREE.Mesh(loopGeo, toon(0xcfd4d9));
+    loop.rotation.y = i * Math.PI / 2;
+    loop.scale.y = 1.55;
+    loop.position.y = -0.4;
+    b.add(loop);
+  }
+  return b;
+}
+const beaterL = makeBeater(); beaterL.position.set(0.34, -0.06, 0.075);
+const beaterR = makeBeater(); beaterR.position.set(0.34, -0.06, -0.075);
+mHead.add(beaterL, beaterR);
+mixerG.add(mBase, mPillar, mHead);
+mixerG.position.set(-2.2, 0, -0.7);
+mixerG.scale.setScalar(0.92);
+mixerG.traverse(m => { if (m.isMesh) m.castShadow = true; });
+scene.add(mixerG);
+const DOCK = new THREE.Vector3(-1.83, 0.15, -0.7); /* raised onto the mixer base, clear of the column */
+
+/* ---------------- bowl ---------------- */
+const bowlG = new THREE.Group();
+const bowlPts = [];
+for (let i = 0; i <= 10; i++) {
+  const k = i / 10;
+  bowlPts.push(new THREE.Vector2(0.2 + Math.sin(k * Math.PI / 2) * 0.38, k * 0.46));
+}
+const bowlMat = toon(0xffffff, { side: THREE.DoubleSide });
+const bowl = new THREE.Mesh(new THREE.LatheGeometry(bowlPts, 28), bowlMat);
+bowl.castShadow = true;
+const rimMat = toon(0xffffff);
+const rim = new THREE.Mesh(new THREE.TorusGeometry(0.575, 0.035, 10, 28), rimMat);
+rim.rotation.x = Math.PI / 2; rim.position.y = 0.46;
+const contentsMat = toon(0xf3ead2);
+const contents = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.42, 0.1, 24), contentsMat);
+contents.position.y = 0.3; contents.scale.set(0.01, 0.01, 0.01);
+/* swirl streak so rotation is visible */
+const streak = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.032, 8, 20, Math.PI * 1.2), toon(0xe6d3a4));
+streak.rotation.x = Math.PI / 2; streak.position.y = 0.33; streak.visible = false;
+/* spoon */
+const spoonG = new THREE.Group();
+const spHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.75, 10), toon(0xb98a5c));
+spHandle.position.y = 0.55; spHandle.rotation.z = 0.45;
+const spHead = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), toon(0xc49a68));
+spHead.scale.set(1, 1.4, 0.6); spHead.position.set(0.28, 0.28, 0);
+spoonG.add(spHandle, spHead);
+spoonG.position.set(0.1, 0.1, 0);
+const spoonPivot = new THREE.Group();
+spoonPivot.add(spoonG);
+spoonPivot.visible = false; /* spoon appears only when mixing by hand */
+bowlG.add(bowl, rim, contents, streak, spoonPivot);
+const BOWL_HOME = new THREE.Vector3(0.35, 0, 0.3);
+bowlG.position.copy(BOWL_HOME);
+scene.add(bowlG);
+
+/* dough ball (hidden until done) */
+const doughMat = toon(0xe6cf9d);
+const dough = new THREE.Mesh(new THREE.SphereGeometry(0.34, 20, 16), doughMat);
+dough.scale.set(0.01, 0.01, 0.01);
+dough.position.y = 0.42;
+dough.castShadow = true;
+bowlG.add(dough);
+
+/* drop ring */
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xf2b84b, transparent: true, opacity: 0 });
+const dropRing = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.02, 8, 40), ringMat);
+dropRing.rotation.x = -Math.PI / 2;
+dropRing.position.set(BOWL_HOME.x, 0.02, BOWL_HOME.z);
+scene.add(dropRing);
+
+/* ---- dough flavors: the dough BECOMES whatever flavor ingredient you toss in ---- */
+const FLAVORS = {
+  classic: { id: 'classic', label: 'Classic', dough: 0xe6cf9d },
+  chocolate: { id: 'chocolate', label: 'Chocolate', dough: 0x6b4630 },
+  coconut: { id: 'coconut', label: 'Coconutty', dough: 0xefe6d2 },
+  strawberry: { id: 'strawberry', label: 'Strawberry', dough: 0xdba1ad },
+  matcha: { id: 'matcha', label: 'Matcha', dough: 0xb3c18f },
+  caramel: { id: 'caramel', label: 'Caramel', dough: 0xd9a85e },
+};
+let flavor = FLAVORS.classic;
+
+/* ---------------- ingredients ---------------- */
+const ingredients = [];
+function makeHit(group, w, h, d, yOff = 0) {
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.y = yOff + h / 2;
+  hit.userData.group = group;
+  group.add(hit);
+  return hit;
+}
+function reg(group, name, x, dropColor, style, z = 1.2) {
+  group.position.set(x, 0, z);
+  group.userData = { name, home: group.position.clone(), dropColor, style, used: false };
+  group.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow = true; });
+  scene.add(group);
+  ingredients.push(group);
+}
+/* paper-label texture for packaging */
+function labelTex(text, bg, fg) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
+  const g = cv.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, 256, 128);
+  g.strokeStyle = fg; g.lineWidth = 5; g.strokeRect(12, 12, 232, 104);
+  g.fillStyle = fg;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  /* shrink to fit so long names ("RAINBOW", "COCONUT") never clip */
+  let fs = 52;
+  do { g.font = 'bold ' + fs + 'px Georgia, serif'; fs -= 2; }
+  while (fs > 20 && g.measureText(text).width > 212);
+  g.fillText(text, 128, 66);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function labelPlane(text, w, h, fg) {
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshBasicMaterial({ map: labelTex(text, '#f3ebdb', fg) }));
+}
+/* flour — paper sack with crimped top and printed label */
+{
+  const g = new THREE.Group();
+  const bag = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.46, 0.22), toon(0xeadfc8));
+  bag.position.y = 0.23;
+  const crimp = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.05, 0.08), toon(0xdbcdae));
+  crimp.position.y = 0.485; crimp.rotation.z = 0.04;
+  const label = labelPlane('FLOUR', 0.26, 0.13, '#b5484a');
+  label.position.set(0, 0.26, 0.112);
+  g.add(bag, crimp, label);
+  makeHit(g, 0.55, 0.72, 0.5);
+  reg(g, 'flour', -1.75, 0xf7f2e4, 'powder');
+}
+/* eggs — crack open over the bowl */
+{
+  const g = new THREE.Group();
+  [-0.09, 0.1].forEach((dx, i) => {
+    const egg = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 12), toon(0xf2e8d5));
+    egg.scale.y = 1.32; egg.position.set(dx, 0.135, i * 0.08 - 0.03);
+    egg.rotation.z = (i ? -1 : 1) * 0.12;
+    g.add(egg);
+  });
+  makeHit(g, 0.5, 0.45, 0.45);
+  reg(g, 'eggs', -1.0, 0xf2c14e, 'crack');
+}
+/* butter — wrapped stick, one end unwrapped */
+{
+  const g = new THREE.Group();
+  const wrap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.155, 0.21), toon(0xf1e8d4));
+  wrap.position.set(-0.07, 0.078, 0);
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.185), toon(0xf0c75e));
+  stick.position.set(0.16, 0.065, 0);
+  const label = labelPlane('BUTTER', 0.22, 0.09, '#8a6a3a');
+  label.position.set(-0.07, 0.085, 0.108);
+  g.add(wrap, stick, label);
+  makeHit(g, 0.62, 0.4, 0.45);
+  reg(g, 'butter', -0.25, 0xf0c75e, 'cubes');
+}
+/* milk — glass bottle with foil cap */
+{
+  const g = new THREE.Group();
+  const prof = [
+    new THREE.Vector2(0.0, 0.0), new THREE.Vector2(0.11, 0.005), new THREE.Vector2(0.12, 0.08),
+    new THREE.Vector2(0.12, 0.28), new THREE.Vector2(0.085, 0.37), new THREE.Vector2(0.055, 0.42),
+    new THREE.Vector2(0.052, 0.5), new THREE.Vector2(0.058, 0.515),
+  ];
+  const bottle = new THREE.Mesh(new THREE.LatheGeometry(prof, 18),
+    toon(0xdfe8e4, { transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+  const milkIn = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.105, 0.3, 14), toon(0xf7f4ec));
+  milkIn.position.y = 0.16;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.035, 12), toon(0xb5484a));
+  cap.position.y = 0.53;
+  g.add(bottle, milkIn, cap);
+  makeHit(g, 0.45, 0.68, 0.45);
+  reg(g, 'milk', 0.55, 0xf7f4ec, 'stream');
+}
+/* sugar — glass jar, visible fill, steel lid */
+{
+  const g = new THREE.Group();
+  const jarGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.14, 0.34, 16),
+    toon(0xe9efe9, { transparent: true, opacity: 0.4 }));
+  jarGlass.position.y = 0.17;
+  const fill = new THREE.Mesh(new THREE.CylinderGeometry(0.132, 0.122, 0.24, 14), toon(0xf3ecd9));
+  fill.position.y = 0.125;
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.155, 0.05, 16), toon(0x9aa1a9));
+  lid.position.y = 0.365;
+  const label = labelPlane('SUGAR', 0.2, 0.1, '#8a6a3a');
+  label.position.set(0, 0.16, 0.152);
+  g.add(jarGlass, fill, lid, label);
+  makeHit(g, 0.5, 0.6, 0.45);
+  reg(g, 'sugar', 1.35, 0xeedfb8, 'granules');
+}
+/* flavor ingredients — front row; toss one in the bowl and the dough becomes that flavor */
+function regFlavor(g, name, x, dropColor, style, flav) {
+  reg(g, name, x, dropColor, style, 1.62);
+  g.userData.flavor = FLAVORS[flav];
+}
+{
+  const g = new THREE.Group();
+  [-0.05, 0.07].forEach((dx, i) => {
+    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), toon(0xc1434c));
+    berry.scale.y = 1.15; berry.position.set(dx, 0.07, i * 0.04 - 0.02);
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.035, 6), toon(0x7fa377));
+    leaf.position.set(dx, 0.15, i * 0.04 - 0.02);
+    g.add(berry, leaf);
+  });
+  makeHit(g, 0.35, 0.3, 0.3);
+  regFlavor(g, 'strawberries', -1.4, 0xd16a74, 'cubes', 'strawberry');
+}
+{
+  const g = new THREE.Group();
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.16), toon(0x4a2e1c)); bar.position.y = 0.03;
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.022, 0.12), toon(0x5a3a28)); ridge.position.y = 0.07;
+  g.add(bar, ridge);
+  makeHit(g, 0.35, 0.26, 0.3);
+  regFlavor(g, 'chocolate', -0.72, 0x5a3a28, 'cubes', 'chocolate');
+}
+{
+  const g = new THREE.Group();
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), toon(0x6b4a2f, { side: THREE.DoubleSide }));
+  shell.position.y = 0.11;
+  const flesh = new THREE.Mesh(new THREE.CylinderGeometry(0.104, 0.104, 0.02, 14), toon(0xf6f0e4));
+  flesh.position.y = 0.105;
+  g.add(shell, flesh);
+  makeHit(g, 0.35, 0.28, 0.3);
+  regFlavor(g, 'coconut', 0.0, 0xf3ecde, 'powder', 'coconut');
+}
+{
+  const g = new THREE.Group();
+  const tin = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.14, 14), toon(0x8aa06e));
+  tin.position.y = 0.07;
+  const fill = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.03, 14), toon(0xb3c18f));
+  fill.position.y = 0.145;
+  const label = labelPlane('MATCHA', 0.16, 0.055, '#3f5233');
+  label.position.set(0, 0.07, 0.097);
+  g.add(tin, fill, label);
+  makeHit(g, 0.32, 0.3, 0.3);
+  regFlavor(g, 'matcha', 0.72, 0xa9bb84, 'powder', 'matcha');
+}
+{
+  const g = new THREE.Group();
+  const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.16, 14), toon(0xd9a85e, { transparent: true, opacity: 0.92 }));
+  jar.position.y = 0.08;
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.035, 14), toon(0x8a6a48));
+  lid.position.y = 0.175;
+  g.add(jar, lid);
+  makeHit(g, 0.32, 0.3, 0.3);
+  regFlavor(g, 'caramel', 1.45, 0xd9a85e, 'stream', 'caramel');
+}
+/* food-coloring bottles: dye the dough (drop in the bowl) or re-tint a topping crate (drop on a crate) */
+let doughDye = null;
+function doughCol() {
+  const c = new THREE.Color(flavor.dough);
+  if (doughDye) { c.lerp(new THREE.Color(doughDye), 0.5); c.offsetHSL(0, 0.12, 0.02); }
+  return c;
+}
+const DYES = [
+  { id: 'red', c: 0xc9402f }, { id: 'yellow', c: 0xe8c84a }, { id: 'green', c: 0x6aa865 },
+  { id: 'blue', c: 0x5b7fc9 }, { id: 'purple', c: 0x9a6ab0 }, { id: 'pink', c: 0xdd8ca8 },
+];
+const dyeBottles = [];
+DYES.forEach((dy, i) => {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.066, 0.16, 10), toon(dy.c, { transparent: true, opacity: 0.92 }));
+  body.position.y = 0.08;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.06, 8), toon(0x3f2d24));
+  cap.position.y = 0.19;
+  g.add(body, cap);
+  makeHit(g, 0.3, 0.3, 0.26);
+  reg(g, 'dye_' + dy.id, -2.35 + (i % 3) * 0.32, dy.c, null, i < 3 ? 1.28 : 1.58);
+  g.userData.dye = dy.c;
+  dyeBottles.push(g);
+});
+let dyesMoved = false;
+
+/* C-theme outlines (inverted hull) */
+const outlineMat = new THREE.MeshBasicMaterial({ color: 0x45291f, side: THREE.BackSide });
+const hulls = [];
+[mixerG, bowlG, ...ingredients, shelf, edgeTrim].forEach(root => {
+  const targets = [];
+  root.traverse(m => {
+    if (m.isMesh && !m.userData.isHull && m.material.visible !== false && !m.userData.group && m.geometry.type !== 'PlaneGeometry') targets.push(m);
+  });
+  targets.forEach(m => {
+    const h = new THREE.Mesh(m.geometry, outlineMat);
+    h.userData.isHull = true;
+    m.userData.hasHull = true;
+    h.scale.setScalar(1.045);
+    h.visible = false;
+    m.add(h);
+    hulls.push(h);
+  });
+});
+
+/* ---------------- theme application ---------------- */
+let themeKey = 'A';
+function applyTheme(k) {
+  themeKey = k;
+  const t = THEMES[k];
+  app.dataset.dir = k;
+  document.querySelectorAll('.themes button').forEach(b => b.classList.toggle('on', b.dataset.t === k));
+  scene.background = new THREE.Color(t.bg);
+  if (wallMat.map) wallMat.map.dispose();
+  wallMat.map = wallTexture(t);
+  wallMat.color.set(0xffffff);
+  wallMat.needsUpdate = true;
+  if (counterMat.map) counterMat.map.dispose();
+  counterMat.map = counterTexture(t);
+  counterMat.color.set(0xffffff);
+  counterMat.needsUpdate = true;
+  edgeMat.color.set(t.edge);
+  hemi.color.set(t.hemiSky); hemi.groundColor.set(t.hemiGround); hemi.intensity = t.hemiInt;
+  key.color.set(t.keyColor); key.intensity = t.keyInt;
+  fill.color.set(t.fillColor); fill.intensity = t.fillInt;
+  glassMat.color.set(t.windowGlass);
+  frameMat.color.set(t.frame);
+  shelfMat.color.set(t.frame);
+  bowlMat.color.set(t.bowl);
+  rimMat.color.set(t.bowlRim);
+  mixBodyMat.color.set(t.mixerBody);
+  knobMat.color.set(t.mixerKnob);
+  ringMat.color.set(t.ring);
+  if (t.ink) outlineMat.color.set(t.ink);
+  hulls.forEach(h => h.visible = t.outline);
+}
+applyTheme('M');
+document.querySelectorAll('.themes button').forEach(b =>
+  b.addEventListener('click', () => applyTheme(b.dataset.t)));
+
+/* ---------------- tiny tween engine ---------------- */
+const tweens = [];
+const easeIO = k => k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
+const easeOut = k => 1 - (1 - k) ** 3;
+const easeBack = k => { const c = 1.70158 * 1.2; return 1 + (c + 1) * ((k - 1) ** 3) + c * ((k - 1) ** 2); };
+function tween(dur, step, done, ease = easeIO) { tweens.push({ dur, step, done, ease, t: 0 }); }
+function updTweens(dt) {
+  for (let i = tweens.length - 1; i >= 0; i--) {
+    const tw = tweens[i];
+    tw.t += dt;
+    const k = Math.min(1, tw.t / tw.dur);
+    tw.step(tw.ease(k));
+    if (k >= 1) { tweens.splice(i, 1); tw.done && tw.done(); }
+  }
+}
+
+/* ---------------- sound ---------------- */
+let AC = null;
+function snd(f, d = 0.09, type = 'sine', vol = 0.12) {
+  try {
+    AC ||= new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + d);
+    o.connect(g); g.connect(AC.destination);
+    o.start(); o.stop(AC.currentTime + d);
+  } catch (e) { /* audio unavailable */ }
+}
+
+/* ---------------- game state ---------------- */
+let state = 'add';            // add | mix | automix | done
+let tool = 'spoon';
+let added = 0;
+let mixProgress = 0;
+const mixColors = [];
+const hint = document.getElementById('hint');
+const ring = document.getElementById('ring');
+const ringTxt = document.getElementById('ringTxt');
+function setHint(html) { hint.innerHTML = html; }
+
+const toolEls = document.querySelectorAll('.tool');
+toolEls.forEach(el => el.addEventListener('click', () => {
+  if (state === 'done' || state === 'automix') return;
+  tool = el.dataset.tool;
+  toolEls.forEach(e => e.classList.toggle('on', e === el));
+  if (tool === 'mixer') {
+    if (state === 'mix') startAutoMix();
+    else setHint('Add all the ingredients first — then the <b>mixer</b> takes over');
+  } else if (state === 'mix') {
+    spoonPivot.visible = true;
+    setHint('Hold inside the bowl and <b>swirl in circles</b>');
+  }
+}));
+
+/* ---------------- pouring ---------------- */
+const droplets = [];
+const jitter = (v, r) => new THREE.Vector3(v.x + (Math.random() - 0.5) * r * 2, v.y, v.z + (Math.random() - 0.5) * r * 2);
+function spawnDrop(o) {
+  const d = o.obj || new THREE.Mesh(
+    o.geo || new THREE.SphereGeometry(o.r || 0.035, 8, 6),
+    toon(o.color, o.mat || {}));
+  d.position.copy(o.pos);
+  d.userData = { vy: o.vy || 0, vx: o.vx || 0, vz: o.vz || 0, spin: o.spin || 0, floorY: o.floorY, onLand: o.onLand };
+  scene.add(d);
+  droplets.push(d);
+  return d;
+}
+function flourPuff() {
+  const mat = new THREE.MeshToonMaterial({ color: 0xf3ead2, gradientMap: gradMap, transparent: true, opacity: 0.5 });
+  const p = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat);
+  p.position.set(bowlG.position.x, 0.52, bowlG.position.z);
+  scene.add(p);
+  tween(0.55, k => { p.scale.setScalar(1 + k * 2.4); mat.opacity = 0.5 * (1 - k); }, () => scene.remove(p));
+}
+function consume(group) {
+  /* the container returns to its counter spot — ingredients never vanish */
+  const from = group.position.clone();
+  tween(0.45, k => {
+    group.position.lerpVectors(from, group.userData.home, k);
+    group.rotation.z *= (1 - k);
+  }, () => finishPour(group), easeBack);
+}
+function applyDoughDye(g) {
+  doughDye = g.userData.dye;
+  for (let i = 0; i < 6; i++) spawnDrop({
+    pos: jitter(new THREE.Vector3(bowlG.position.x, 1.1, bowlG.position.z), 0.08),
+    color: doughDye, r: 0.022,
+  });
+  if (contents.scale.x > 0.1) contentsMat.color.lerp(new THREE.Color(doughDye), 0.4);
+  snd(480, 0.1, 'sine', 0.12);
+  setHint('A drop of <b>color</b> — the dough takes the tint');
+  returnTo(g, g.userData.home);
+}
+function pour(group) {
+  group.userData.used = true;
+  state = 'pouring';
+  const style = group.userData.style;
+  const b = bowlG.position;
+  const start = group.position.clone();
+  /* tilt the TOP toward the bowl: +z rotation swings the mouth left, so lift to the right of the bowl */
+  const crack = style === 'crack';
+  const lift = crack
+    ? new THREE.Vector3(b.x + 0.22, 1.45, b.z + 0.1)
+    : new THREE.Vector3(b.x + 0.52, 1.5, b.z + 0.1);
+  const tilt = crack ? 0.2 : 1.9;
+  tween(0.45, k => {
+    group.position.lerpVectors(start, lift, k);
+    group.rotation.z = tilt * k;
+  }, () => {
+    if (crack) crackEggs(group, lift);
+    else spawnStyle(group, style);
+  });
+}
+/* tapered pour stream, grows down from the container mouth */
+function makeStream(mouth, topR, botR, color, holdDur, mat) {
+  const geo = new THREE.CylinderGeometry(topR, botR, 1, 8);
+  geo.translate(0, -0.5, 0);
+  const stream = new THREE.Mesh(geo, toon(color, mat || {}));
+  stream.position.copy(mouth);
+  stream.scale.y = 0.01;
+  scene.add(stream);
+  const H = mouth.y - 0.4;
+  tween(0.16, k => { stream.scale.y = Math.max(0.01, k * H); }, null, easeOut);
+  tween(holdDur, () => {}, () => {
+    tween(0.18, k2 => { stream.scale.y = Math.max(0.01, (1 - k2) * H); }, () => scene.remove(stream));
+  }, k => k);
+}
+function spawnStyle(group, style) {
+  /* the tilted container's mouth ends up just right of the bowl center */
+  const mouth = new THREE.Vector3(bowlG.position.x + 0.06, 1.28, bowlG.position.z + 0.1);
+  const dc = group.userData.dropColor; /* each ingredient pours in its own color */
+  let n = 0, total = 10, every = 45, make;
+  if (style === 'powder') {
+    makeStream(mouth, 0.03, 0.07, dc, 0.65);
+    total = 22; every = 25;
+    make = () => spawnDrop({ pos: jitter(mouth, 0.06), color: dc, r: 0.01 + Math.random() * 0.016, vx: (Math.random() - 0.5) * 0.25 });
+  } else if (style === 'granules') {
+    makeStream(mouth, 0.018, 0.038, dc, 0.55);
+    total = 16; every = 28;
+    make = () => spawnDrop({ pos: jitter(mouth, 0.035), color: dc, r: 0.009 + Math.random() * 0.011, vx: (Math.random() - 0.5) * 0.2 });
+  } else if (style === 'cubes') {
+    total = 5; every = 95;
+    make = () => spawnDrop({ geo: new THREE.BoxGeometry(0.07, 0.06, 0.06), pos: jitter(mouth, 0.03), color: dc, spin: 4 + Math.random() * 4 });
+  } else { /* stream */
+    makeStream(mouth, 0.02, 0.028, dc, 1.0);
+    total = 8; every = 100;
+    make = () => spawnDrop({ pos: jitter(new THREE.Vector3(mouth.x, 0.52, mouth.z), 0.07), color: dc, r: 0.02 });
+  }
+  snd(300, 0.06, 'triangle');
+  /* spawn on the sim clock, not wall-clock timers (immune to tab throttling) */
+  let spawned = 0;
+  tween(total * every / 1000, k => {
+    const want = Math.floor(k * total);
+    while (spawned < want) { make(); spawned++; }
+  }, () => {
+    if (style === 'powder') flourPuff();
+    consume(group);
+  }, k => k);
+}
+/* eggs: shells split apart, yolk + white drop in */
+function crackEggs(group, lift) {
+  snd(950, 0.05, 'square', 0.09);
+  group.visible = false;
+  const topGeo = new THREE.SphereGeometry(0.105, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+  const botGeo = new THREE.SphereGeometry(0.105, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+  [-0.13, 0.13].forEach(dz => {
+    const pos = new THREE.Vector3(lift.x - 0.2, lift.y - 0.05, lift.z + dz);
+    const shellMat = toon(0xf2e8d5, { side: THREE.DoubleSide });
+    const top = new THREE.Mesh(topGeo, shellMat);
+    const bot = new THREE.Mesh(botGeo, shellMat);
+    [top, bot].forEach(m => { m.scale.set(1, 1.25, 1); m.position.copy(pos); scene.add(m); });
+    tween(0.15, () => {}, () => {
+      spawnDrop({ pos: new THREE.Vector3(pos.x, pos.y - 0.06, pos.z), color: 0xf2b53e, r: 0.055 });
+      spawnDrop({ pos: new THREE.Vector3(pos.x + 0.03, pos.y - 0.02, pos.z), color: 0xf8f4e6, r: 0.07, mat: { transparent: true, opacity: 0.7 } });
+      snd(210, 0.1, 'sine', 0.1);
+    });
+    tween(0.55, k => {
+      top.position.set(pos.x - 0.17 * k, pos.y + 0.24 * k - 0.26 * k * k, pos.z);
+      top.rotation.z = 1.5 * k;
+      bot.position.set(pos.x + 0.15 * k, pos.y + 0.08 * k - 0.3 * k * k, pos.z);
+      bot.rotation.z = -1.1 * k;
+    }, () => {
+      [top, bot].forEach(m => tween(0.25, k => { const s = 1 - k; m.scale.set(s, s * 1.25, s); }, () => scene.remove(m)));
+    });
+  });
+  tween(1.0, () => {}, () => {
+    /* fresh eggs reappear at their spot — nothing on the counter vanishes */
+    group.rotation.z = 0;
+    group.position.copy(group.userData.home);
+    group.scale.setScalar(0.01);
+    group.visible = true;
+    tween(0.3, k => group.scale.setScalar(0.01 + k * 0.99), null, easeBack);
+    finishPour(group);
+  });
+}
+function finishPour(group) {
+  if (group.userData.flavor) {
+    /* a flavor twist: tints the batter and sets the dough flavor — doesn't count toward the 5 basics */
+    flavor = group.userData.flavor;
+    mixColors.push(new THREE.Color(group.userData.dropColor));
+    contentsMat.color.copy(avgColor());
+    markChip('twist');
+    snd(540, 0.12, 'sine', 0.14);
+    setHint(`<b>${flavor.label}</b> dough coming up`);
+    state = added >= 5 ? 'mix' : 'add';
+    return;
+  }
+  added++;
+  mixColors.push(new THREE.Color(group.userData.dropColor));
+  const avg = new THREE.Color(0, 0, 0);
+  mixColors.forEach(c => avg.add(c));
+  avg.multiplyScalar(1 / mixColors.length);
+  contentsMat.color.copy(avg);
+  const s = 0.35 + (added / 5) * 0.65;
+  tween(0.35, k => {
+    contents.scale.setScalar(THREE.MathUtils.lerp(contents.scale.x, s, k));
+    contents.position.y = 0.26 + (added / 5) * 0.08;
+  }, null, easeBack);
+  document.querySelector(`.chip[data-i="${group.userData.name}"]`)?.classList.add('done');
+  snd(180 + added * 40, 0.12, 'sine', 0.16);
+  if (added >= 5) {
+    state = 'mix';
+    streak.visible = true;
+    spoonPivot.visible = (tool === 'spoon');
+    streak.material.color.copy(avg).offsetHSL(0, 0, -0.08);
+    ring.style.display = 'flex';
+    setHint(tool === 'mixer'
+      ? 'Ready — the <b>mixer</b> will take it from here'
+      : 'Hold inside the bowl and <b>swirl in circles</b> — or grab the <b>mixer</b>');
+    if (tool === 'mixer') startAutoMix();
+  } else {
+    state = 'add';
+    setHint(`Nice — <b>${5 - added}</b> more to go`);
+  }
+}
+
+/* ---------------- mixing ---------------- */
+function setProgress(p) {
+  mixProgress = Math.min(1, p);
+  ring.style.setProperty('--p', (mixProgress * 100).toFixed(0));
+  ringTxt.textContent = (mixProgress * 100).toFixed(0) + '%';
+  const t = mixProgress;
+  contentsMat.color.lerpColors(
+    new THREE.Color().copy(avgColor()), doughCol(), t);
+  if (mixProgress >= 1) finishMix();
+}
+function avgColor() {
+  const avg = new THREE.Color(0, 0, 0);
+  mixColors.forEach(c => avg.add(c));
+  return avg.multiplyScalar(1 / Math.max(1, mixColors.length));
+}
+let whirTimer = null;
+function startAutoMix() {
+  state = 'automix';
+  spoonPivot.visible = false; /* the machine mixes with its beaters, not the spoon */
+  setHint('Whipping it up…');
+  const from = bowlG.position.clone();
+  tween(0.7, k => bowlG.position.lerpVectors(from, DOCK, k), () => {
+    /* tilt-head lowers so the beaters actually sit in the batter */
+    tween(0.25, k => { mHead.position.y = 1.22 - 0.16 * k; }, () => {
+      snd(120, 0.3, 'sawtooth', 0.05);
+      whirTimer = setInterval(() => snd(90 + Math.random() * 40, 0.12, 'sawtooth', 0.04), 120);
+      const dur = 2.6;
+      tween(dur, k => {
+        beaterL.rotation.y = k * 50;
+        beaterR.rotation.y = -k * 50; /* counter-rotating, like the real thing */
+        streak.rotation.z = -k * 26;
+        mHead.position.x = -0.12 + Math.sin(k * 90) * 0.008;
+        setProgress(k);
+      }, () => {
+        clearInterval(whirTimer);
+        tween(0.25, k2 => { mHead.position.y = 1.06 + 0.16 * k2; }, () => {
+          const back = bowlG.position.clone();
+          tween(0.7, k3 => bowlG.position.lerpVectors(back, BOWL_HOME, k3));
+        });
+      }, k => k);
+    });
+  });
+}
+function finishMix() {
+  if (state === 'done') return;
+  state = 'done';
+  ring.style.display = 'none';
+  streak.visible = false;
+  spoonPivot.visible = false;
+  doughMat.color.copy(doughCol());
+  setHint('Beautiful. That’s a dough.');
+  tween(0.4, k => { contents.scale.y = 0.01 + (1 - k) * contents.scale.y; });
+  tween(0.65, k => {
+    dough.scale.setScalar(0.01 + k * 0.99);
+    dough.position.y = 0.42 + Math.sin(k * Math.PI) * 0.12;
+  }, () => {
+    snd(520, 0.12); setTimeout(() => snd(660, 0.18), 110); setTimeout(() => snd(880, 0.25), 240);
+    showCard('Dough ready!', 'Shapes and a whole toppings bar await at the next station.', 'Continue → Mix-ins', startStage2);
+  }, easeBack);
+  tween(0.65, k => { dough.scale.y = dough.scale.x * (1 - 0.25 * Math.sin(k * Math.PI)); });
+}
+
+/* ---------------- pointer interaction ---------------- */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.55);
+const planeHit = new THREE.Vector3();
+/* where the pointer ray meets the countertop — the truth for drop tests */
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.06);
+const groundHit = new THREE.Vector3();
+let dragging = null;
+let swirling = false;
+let prevAngle = 0;
+let swirlBank = 0;
+
+function toNDC(e) {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+}
+function hoverTargets() {
+  if (stage === 1) {
+    if (state === 'add') return ingredients.filter(g2 => !g2.userData.used).flatMap(g2 => g2.children);
+    if (state === 'mix') return ingredients.filter(g2 => (g2.userData.flavor || g2.userData.dye) && !g2.userData.used).flatMap(g2 => g2.children);
+    return [];
+  }
+  if (stage === 2) {
+    if (state !== 'portion' && state !== 'top') return [];
+    const pool = crates.flatMap(c => c.children);
+    pool.push(...dyeBottles.flatMap(b => b.children));
+    if (s2.portions < 6) pool.push(...dough2.children);
+    return pool;
+  }
+  if (stage === 3) {
+    if (state === 'dial') return [dialHitMesh];
+    if (state === 'load' || state === 'baking') return tray2.children;
+    return [];
+  }
+  if (stage === 4 && state === 'frost') {
+    const pool = [...frostBases.flatMap(b2 => b2.children), ...milkF.children, ...crates.flatMap(c => c.children)];
+    if (s4f.ready) pool.push(...potG.children);
+    return pool;
+  }
+  if (stage === 5 && (state === 'pack' || state === 'decor')) return scoops.flatMap(s => s.children);
+  return [];
+}
+function bowlScreenPos() {
+  const v = bowlG.position.clone(); v.y = 0.4;
+  v.project(camera);
+  return { x: (v.x + 1) / 2 * innerWidth, y: (-v.y + 1) / 2 * innerHeight };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointers */ }
+  toNDC(e);
+  ray.setFromCamera(ndc, camera);
+  if (stage === 2) {
+    if (state === 'portion' || state === 'top') {
+      const pool = [];
+      if (s2.portions < 6) pool.push(...dough2.children);
+      const hit = ray.intersectObjects(pool, false).find(h => h.object.userData.group);
+      dragging = dyeAtPointer(e.clientX, e.clientY)
+        || (hit ? hit.object.userData.group : crateAtPointer(e.clientX, e.clientY));
+      if (dragging) {
+        if (dragging.userData.topping) setHint(`<b>${dragging.userData.topping.label}</b> — sprinkle over a cookie`);
+        else if (dragging.userData.dye) setHint('<b>Food coloring</b> — drop it on a cookie or a topping crate to tint it');
+        snd(340, 0.05, 'triangle', 0.07);
+      }
+    }
+    return;
+  }
+  if (stage === 4) {
+    if (state === 'frost') {
+      const pool = [...frostBases.flatMap(b2 => b2.children), ...milkF.children];
+      if (s4f.ready) pool.push(...potG.children);
+      const hit = ray.intersectObjects(pool, false).find(h => h.object.userData.group);
+      dragging = hit ? hit.object.userData.group : crateAtPointer(e.clientX, e.clientY);
+      if (dragging) {
+        if (dragging.userData.topping) setHint(`<b>${dragging.userData.topping.label}</b> — sprinkle over a cookie`);
+        snd(340, 0.05, 'triangle', 0.07);
+      }
+    }
+    return;
+  }
+  if (stage === 3) {
+    if (state === 'dial') {
+      if (ray.intersectObjects([dialHitMesh], false).length) setDial();
+      else if (ray.intersectObjects(tray2.children, false).find(h => h.object.userData.group))
+        setHint('Set the <b>dial</b> first — then load the tray');
+    } else if (state === 'load' || state === 'baking') {
+      const hits = ray.intersectObjects(tray2.children, false);
+      if (hits.find(h => h.object.userData.group)) { dragging = tray2; snd(340, 0.05, 'triangle', 0.07); }
+    }
+    return;
+  }
+  if (stage === 5) {
+    if (state === 'pack' || state === 'decor') {
+      const pool = scoops.flatMap(s => s.children);
+      const hits = ray.intersectObjects(pool, false);
+      const hit = hits.find(h => h.object.userData.group);
+      if (hit) {
+        const sc = hit.object.userData.group;
+        if (sc.userData.packed) { /* picking a packed cookie back up to rearrange */
+          sc.userData.packed = false;
+          s4.packed--;
+          sc.scale.set(1, 1, 1);
+          const row = checklistEl.querySelector('.chip[data-i="boxed"]');
+          if (row) { row.classList.remove('done'); row.innerHTML = '<i>✓</i>Cookies in the box ' + s4.packed + '/6'; }
+          if (state === 'decor') { state = 'pack'; swpanel.style.display = 'none'; }
+          setHint('Rearrange away — drop it back in the box');
+        }
+        dragging = sc;
+        snd(340, 0.05, 'triangle', 0.07);
+      }
+    }
+    return;
+  }
+  if (state === 'add') {
+    const dyeHit = dyeAtPointer(e.clientX, e.clientY);
+    const hits = ray.intersectObjects(
+      ingredients.filter(g => !g.userData.used).flatMap(g => g.children), false);
+    const hit = hits.find(h => h.object.userData.group);
+    if (dyeHit || hit) {
+      dragging = dyeHit || hit.object.userData.group;
+      if (dragging.userData.dye) setHint('<b>Food coloring</b> — drop it in the bowl to dye the dough');
+      snd(340, 0.05, 'triangle', 0.07);
+    } else {
+      const bp = bowlScreenPos();
+      if (Math.hypot(e.clientX - bp.x, e.clientY - bp.y) < Math.min(innerWidth, innerHeight) * 0.22)
+        setHint(`Everything into the bowl first — <b>${5 - added}</b> to go`);
+    }
+  } else if (state === 'mix') {
+    /* flavor twists can still go in before mixing */
+    const fl = ingredients.filter(i2 => (i2.userData.flavor || i2.userData.dye) && !i2.userData.used).flatMap(i2 => i2.children);
+    const dyeHit2 = dyeAtPointer(e.clientX, e.clientY);
+    const fh = ray.intersectObjects(fl, false).find(h => h.object.userData.group);
+    if (dyeHit2 || fh) {
+      dragging = dyeHit2 || fh.object.userData.group;
+      snd(340, 0.05, 'triangle', 0.07);
+    } else if (tool === 'spoon') {
+      const b = bowlScreenPos();
+      const dx = e.clientX - b.x, dy = e.clientY - b.y;
+      if (Math.hypot(dx, dy) < Math.min(innerWidth, innerHeight) * 0.22) {
+        swirling = true;
+        prevAngle = Math.atan2(dy, dx);
+      }
+    }
+  }
+});
+canvas.addEventListener('pointermove', e => {
+  if (dragging) {
+    toNDC(e);
+    ray.setFromCamera(ndc, camera);
+    ray.ray.intersectPlane(groundPlane, groundHit);
+    if (ray.ray.intersectPlane(dragPlane, planeHit)) {
+      if (stage === 3 && state === 'baking') {
+        /* yank the tray toward you to pull it out */
+        if (groundHit.z > 0.45) pullTray();
+        return;
+      }
+      const dy = dragging.userData.dragY ?? 0.55;
+      dragging.position.set(planeHit.x, dy, THREE.MathUtils.clamp(planeHit.z, -1.2, 1.6));
+      dragging.rotation.z = Math.sin(performance.now() / 180) * (dragging === tray2 ? 0.02 : 0.08);
+      if ((stage === 2 && crates.includes(dragging)) || (stage === 4 && (dragging === potG || crates.includes(dragging)))) {
+        highlightScoop(nearestScoop(dragging));
+      }
+      if (stage === 1) {
+        const over = dragging.position.distanceTo(new THREE.Vector3(bowlG.position.x, 0.55, bowlG.position.z)) < 0.9;
+        ringMat.opacity = over ? 0.95 : 0.55;
+      }
+    }
+  } else if (!swirling) {
+    /* hover affordance: show a grab cursor over anything draggable right now */
+    toNDC(e);
+    ray.setFromCamera(ndc, camera);
+    const hov = ray.intersectObjects(hoverTargets(), false).some(h => h.object.userData.group);
+    canvas.style.cursor = hov ? 'grab' : 'default';
+  }
+  if (swirling) {
+    const b = bowlScreenPos();
+    const a = Math.atan2(e.clientY - b.y, e.clientX - b.x);
+    let d = a - prevAngle;
+    if (d > Math.PI) d -= 2 * Math.PI;
+    if (d < -Math.PI) d += 2 * Math.PI;
+    prevAngle = a;
+    const dc = THREE.MathUtils.clamp(d, -0.3, 0.3);
+    spoonPivot.rotation.y -= dc;
+    streak.rotation.z += dc;
+    swirlBank += Math.abs(dc); /* consumed at a capped rate in updateSim — pointer polling rate can't speed up mixing */
+  }
+});
+function release() {
+  canvas.style.cursor = 'default';
+  if (dragging) {
+    const g = dragging; dragging = null;
+    if (stage === 2) {
+      if (g === dough2) {
+        const over = sDist(g, tray2.position) < sdim() * 0.22;
+        if (over && s2.portions < 6) spawnScoop();
+        returnTo(g, g.userData.home);
+      } else if (crates.includes(g)) {
+        const target = nearestScoop(g);
+        highlightScoop(null);
+        if (target && (state === 'portion' || state === 'top')) sprinkleOn(target, g.userData.topping);
+        returnTo(g, g.userData.home);
+      } else if (g.userData.dye) {
+        /* dye the nearest thing — a cookie or a topping crate (same screen-space rule as picking) */
+        const ns = nearestIn(g, scoops, 0.2);
+        const nc = nearestIn(g, crates, 0.14, 0.075);
+        if (ns.obj && (!nc.obj || ns.d <= nc.d)) tintScoop(ns.obj, g.userData.dye);
+        else if (nc.obj) tintTopping(nc.obj.userData.topping, g.userData.dye);
+        else setHint('Drop the color on a <b>cookie</b> or a <b>topping crate</b>');
+        returnTo(g, g.userData.home);
+      }
+    } else if (stage === 4) {
+      if (g === potG) {
+        const target = nearestScoop(g);
+        highlightScoop(null);
+        if (target && s4f.ready) frostCookie(target);
+        returnTo(g, g.userData.home);
+      } else if (crates.includes(g)) {
+        const target = nearestScoop(g);
+        highlightScoop(null);
+        if (target) sprinkleOn(target, g.userData.topping);
+        returnTo(g, g.userData.home);
+      } else if (frostBases.includes(g) || g === milkF) {
+        const pm = new THREE.Vector3();
+        potG.getWorldPosition(pm); pm.y = 0.45;
+        if (sDist(g, pm) < sdim() * 0.15) addToPot(g);
+        returnTo(g, g.userData.home);
+      }
+    } else if (stage === 3) {
+      if (g === tray2 && state === 'load') {
+        const near = sDist(g, new THREE.Vector3(16.3, 0.7, 0.1)) < sdim() * 0.22;
+        if (near) insertTray();
+        else returnTo(tray2, new THREE.Vector3(15.0, 0, 0.75));
+      }
+    } else if (stage === 5) {
+      if (scoops.includes(g)) {
+        const inBox = sDist(g, box4.position) < sdim() * 0.19;
+        const u = underDragged(g, 0.05);
+        if (inBox && !g.userData.packed) placeCookie(g, u.x, u.z);
+        else returnTo(g, g.userData.rackPos || g.position.clone());
+      }
+    } else {
+      const over = g.position.distanceTo(new THREE.Vector3(bowlG.position.x, 0.55, bowlG.position.z)) < 0.9;
+      ringMat.opacity = 0;
+      if (over && g.userData.dye) applyDoughDye(g);
+      else if (over) pour(g);
+      else returnTo(g, g.userData.home);
+    }
+  }
+  swirling = false;
+}
+canvas.addEventListener('pointerup', release);
+canvas.addEventListener('pointercancel', release);
+
+/* ---------------- main loop ---------------- */
+/* ================= stages 2-5 ================= */
+const STX = [0, 8.4, 16, 24, 32.75];
+let stage = 1;
+
+/* ---- toppings (stage 2 palette) ---- */
+const TOPPINGS = [
+  { id: 'chips', label: 'Choc chips', short: 'CHIPS', colors: [0x4a2e1c, 0x3a2215], r: 0.032, kind: 'drop' },
+  { id: 'rainbow', label: 'Rainbow sprinkles', short: 'RAINBOW', colors: [0xd94f4f, 0xe8a934, 0xf2d44f, 0x74b06a, 0x5b8fc9, 0xb06ab0], r: 0.012, kind: 'stick' },
+  { id: 'redsprk', label: 'Red sprinkles', short: 'RED SPR', colors: [0xc23b3b, 0xd94f4f], r: 0.012, kind: 'stick' },
+  { id: 'candy', label: 'Candy gems', short: 'GEMS', colors: [0xc9402f, 0xe8a934, 0x74b06a, 0x4f7fc9, 0xf2d44f, 0x8a5a30], r: 0.03, kind: 'gem' },
+  { id: 'oreo', label: 'Oreo bits', short: 'OREO', colors: [0x1d1a18], r: 0.028, kind: 'oreo' },
+  { id: 'caramel', label: 'Salted caramel', short: 'CARAMEL', colors: [0xd29238, 0xc07f2c], r: 0.026, kind: 'chunk' },
+  { id: 'pretzel', label: 'Pretzel', short: 'PRETZEL', colors: [0x9a6a38], r: 0.024, kind: 'pretzel' },
+  { id: 'kinder', label: 'Kinder bits', short: 'KINDER', colors: [0xf2e8d6], r: 0.028, kind: 'kinder' },
+  { id: 'whitechoc', label: 'White choc', short: 'W.CHOC', colors: [0xefe3c8, 0xf6edd8], r: 0.028, kind: 'chunk' },
+  { id: 'mallow', label: 'Marshmallows', short: 'MALLOW', colors: [0xfff6f0, 0xf2c5ce], r: 0.03, kind: 'mallow' },
+  { id: 'peanut', label: 'Peanuts', short: 'PEANUT', colors: [0xd9b071, 0xcda15f], r: 0.026, kind: 'peanut' },
+  { id: 'pecan', label: 'Sweet pecans', short: 'PECAN', colors: [0x8a5a30, 0x7a4c26], r: 0.03, kind: 'chunk' },
+  { id: 'pistachio', label: 'Pistachios', short: 'PISTACH', colors: [0x97b063, 0x7f9a4e], r: 0.026, kind: 'chunk' },
+  { id: 'berry', label: 'Blueberries', short: 'BERRY', colors: [0x4f5b8f, 0x3d4a7a], r: 0.03, kind: 'drop' },
+  { id: 'strawbits', label: 'Strawberry bits', short: 'STRAWB', colors: [0xc9404a, 0xd95560], r: 0.028, kind: 'chunk' },
+  { id: 'curl', label: 'Choco curls', short: 'CURLS', colors: [0x5a3a28, 0x6b4630], r: 0.026, kind: 'curl' },
+  { id: 'banana', label: 'Banana chips', short: 'BANANA', colors: [0xe8d490, 0xdec478], r: 0.03, kind: 'disc' },
+  { id: 'cherry', label: 'Cherry halves', short: 'CHERRY', colors: [0xb23242, 0xc9404a], r: 0.03, kind: 'half' },
+  { id: 'wafer', label: 'Wafer bits', short: 'WAFER', colors: [0xd9b98a], r: 0.028, kind: 'wafer' },
+  { id: 'honey', label: 'Honeycomb', short: 'HONEY', colors: [0xdfa63f, 0xc98f2e], r: 0.028, kind: 'chunk' },
+  { id: 'coconut', label: 'Coconut', short: 'COCONUT', colors: [0xf6f0e4], r: 0.011, kind: 'stick' },
+  { id: 'lotus', label: 'Lotus crumbs', short: 'LOTUS', colors: [0xb67c42], r: 0.024, kind: 'chunk' },
+  { id: 'salt', label: 'Flaky salt', short: 'SALT', colors: [0xeef2f5], r: 0.018, kind: 'drop' },
+];
+/* one realistic piece of a topping — multi-color palettes, two-tone candies, real shapes */
+function makeTopPiece(top, s = 1) {
+  /* per-piece shade + size jitter so no two pieces look identical */
+  const baseCol = top.colors[Math.floor(Math.random() * top.colors.length)];
+  const col = new THREE.Color(baseCol).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.06).getHex();
+  const r = top.r * s;
+  let m;
+  switch (top.kind) {
+    case 'stick': m = new THREE.Mesh(new THREE.BoxGeometry(r, r, r * 3.6), toon(col)); break;
+    case 'chunk': m = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 1.3, r * 1.7), toon(col)); break;
+    case 'gem': m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), toon(col)); m.scale.y = 0.55; break;
+    case 'mallow': m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, r * 1.5, 10), toon(col)); break;
+    case 'pretzel':
+      m = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.45, 6, 10), toon(col));
+      m.rotation.x = Math.PI / 2;
+      break;
+    case 'oreo': {
+      m = new THREE.Group();
+      const top2 = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 0.7, r * 1.8), toon(0x1d1a18)); top2.position.y = r * 0.55;
+      const cream = new THREE.Mesh(new THREE.BoxGeometry(r * 1.8, r * 0.45, r * 1.6), toon(0xf2ead9));
+      const bot = top2.clone(); bot.position.y = -r * 0.55;
+      m.add(top2, cream, bot);
+      break;
+    }
+    case 'kinder': {
+      m = new THREE.Group();
+      const t2 = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 0.8, r * 1.6), toon(0xf4ead8)); t2.position.y = r * 0.4;
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 0.8, r * 1.6), toon(0x6b4a2f)); b2.position.y = -r * 0.4;
+      m.add(t2, b2);
+      break;
+    }
+    case 'peanut': {
+      m = new THREE.Group();
+      [-0.5, 0.5].forEach(dx => {
+        const p = new THREE.Mesh(new THREE.SphereGeometry(r * 0.78, 8, 6), toon(col));
+        p.position.x = dx * r * 0.75;
+        m.add(p);
+      });
+      break;
+    }
+    case 'curl':
+      m = new THREE.Mesh(new THREE.TorusGeometry(r * 1.2, r * 0.42, 6, 10, Math.PI * 1.3), toon(col));
+      break;
+    case 'disc':
+      m = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.3, r * 1.3, r * 0.4, 12), toon(col));
+      break;
+    case 'half':
+      m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(col, { side: THREE.DoubleSide }));
+      break;
+    case 'wafer': {
+      m = new THREE.Group();
+      [0xd9b98a, 0xf2e6cc, 0xd9b98a].forEach((wc, i2) => {
+        const layer = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 0.45, r * 1.8), toon(wc));
+        layer.position.y = (i2 - 1) * r * 0.45;
+        m.add(layer);
+      });
+      break;
+    }
+    default: m = new THREE.Mesh(new THREE.SphereGeometry(r, 9, 7), toon(col));
+  }
+  m.scale.multiplyScalar(0.85 + Math.random() * 0.35);
+  return m;
+}
+
+/* ---- cookie shapes (stage 2 palette) ---- */
+const SHAPES = [
+  { id: 'classic', label: 'Classic' },
+  { id: 'big', label: 'Big cookie' },
+  { id: 'donut', label: 'Donut' },
+  { id: 'claw', label: 'Bear claw' },
+];
+let shape = SHAPES[0];
+const contBtn = document.getElementById('cont');
+const bakebar = document.getElementById('bakebar');
+const bakemarker = document.getElementById('bakemarker');
+const swpanel = document.getElementById('swpanel');
+const checklistEl = document.getElementById('checklist');
+const stageNameEl = document.getElementById('stageName');
+const cardTitle = document.getElementById('cardTitle');
+const cardText = document.getElementById('cardText');
+const cardBtn = document.getElementById('cardBtn');
+const doneCardEl = document.getElementById('doneCard');
+let cardAction = null;
+cardBtn.addEventListener('click', () => {
+  doneCardEl.classList.remove('show');
+  const a = cardAction; cardAction = null; /* one-shot — double-click safe */
+  if (a) a();
+});
+function showCard(title, text, btn, action) {
+  cardTitle.textContent = title; cardText.textContent = text; cardBtn.textContent = btn;
+  cardAction = action; doneCardEl.classList.add('show');
+}
+function setChecklist(html) { checklistEl.innerHTML = html; }
+const chipRow = (id, label) => `<span class="chip" data-i="${id}"><i>✓</i>${label}</span>`;
+function markChip(id) { checklistEl.querySelector(`.chip[data-i="${id}"]`)?.classList.add('done'); }
+function setHUDStage(n, name) {
+  stageNameEl.textContent = 'stage ' + n + ' · ' + name;
+  document.querySelectorAll('.pip').forEach(p => {
+    const s = +p.dataset.s;
+    p.classList.toggle('now', s === n);
+    p.classList.toggle('done', s < n);
+  });
+}
+function addOutlinesTo(root) {
+  const targets = [];
+  root.traverse(m => {
+    if (m.isMesh && !m.userData.isHull && !m.userData.hasHull && m.material.visible !== false && !m.userData.group && m.geometry.type !== 'PlaneGeometry') targets.push(m);
+  });
+  targets.forEach(m => {
+    const h = new THREE.Mesh(m.geometry, outlineMat);
+    h.userData.isHull = true;
+    m.userData.hasHull = true;
+    h.scale.setScalar(1.045);
+    h.visible = true;
+    m.add(h);
+    hulls.push(h);
+  });
+}
+/* palette UI builders */
+function buildPalette(rowEl, items, dotColor, onPick, initial) {
+  rowEl.innerHTML = '';
+  items.forEach(it => {
+    const b = document.createElement('button');
+    b.className = 'pbtn' + (it === initial ? ' on' : '');
+    b.innerHTML = `<i style="background:#${(dotColor(it)).toString(16).padStart(6, '0')}"></i>${it.label}`;
+    b.addEventListener('click', () => {
+      if (onPick(it) === false) return; /* veto: selection locked */
+      rowEl.querySelectorAll('.pbtn').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    });
+    rowEl.appendChild(b);
+  });
+}
+buildPalette(document.getElementById('shapeRow'), SHAPES, () => 0xe6cf9d, s => {
+  shape = s;
+  setHint(`Next scoops come out as <b>${s.label.toLowerCase()}s</b>`);
+  snd(420, 0.06, 'triangle', 0.08);
+}, SHAPES[0]);
+/* per-station camera pull-back — the topping/pantry stations need a wider view */
+const STZ = [5.0, 6.3, 5.2, 6.5, 5.4];
+function dollyTo(n, done) {
+  const x0 = camera.position.x, x1 = STX[n - 1];
+  const z0 = camera.position.z, z1 = STZ[n - 1];
+  tween(1.2, k => {
+    const x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
+    camera.position.set(x, 1.85 + (z - 5) * 0.34, z);
+    camera.lookAt(x, 0.55, -0.2);
+  }, done);
+}
+/* point visually under a dragged (floating) object at the target's height — what the player perceives as "where it is" */
+function underDragged(obj, ty = 0.06) {
+  const v = obj.position.clone().sub(camera.position);
+  const t = (ty - camera.position.y) / v.y;
+  return camera.position.clone().add(v.multiplyScalar(t));
+}
+/* screen-space drop tests — match what the player actually sees */
+const sdim = () => Math.min(innerWidth, innerHeight);
+function sXY(v3) {
+  const v = v3.clone().project(camera);
+  return { x: (v.x + 1) / 2 * innerWidth, y: (-v.y + 1) / 2 * innerHeight };
+}
+function sDist(obj, worldV) {
+  const a = sXY(obj.position), b = sXY(worldV);
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+function returnTo(obj, pos) {
+  const from = obj.position.clone();
+  tween(0.35, k => {
+    obj.position.lerpVectors(from, pos, k);
+    obj.rotation.z *= (1 - k);
+  }, null, easeBack);
+}
+
+/* --- station 2: portion & top --- */
+const tray2 = new THREE.Group();
+{
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 1.05), toon(0xb9bec4));
+  base.position.y = 0.025;
+  const lipMat = toon(0xa6abb2);
+  const lf = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.06), lipMat); lf.position.set(0, 0.06, 0.525);
+  const lb = lf.clone(); lb.position.z = -0.525;
+  const ll = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 1.05), lipMat); ll.position.set(-0.9, 0.06, 0);
+  const lr = ll.clone(); lr.position.x = 0.9;
+  tray2.add(base, lf, lb, ll, lr);
+  makeHit(tray2, 2.0, 0.35, 1.3);
+}
+tray2.position.set(7.4, 0, 0.1);
+tray2.userData.dragY = 0.25;
+tray2.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow = true; });
+scene.add(tray2);
+addOutlinesTo(tray2);
+const SLOT = [];
+/* brick-staggered so the back row stays visible from the play camera */
+[[-0.55, -0.21], [-0.05, -0.21], [0.45, -0.21], [-0.3, 0.23], [0.2, 0.23], [0.7, 0.23]]
+  .forEach(([x, z]) => SLOT.push(new THREE.Vector3(x, 0.05, z)));
+const scoops = [];
+
+const dough2 = new THREE.Group();
+{
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 14), toon(0xe6cf9d));
+  ball.position.y = 0.26; ball.scale.y = 0.92; ball.castShadow = true;
+  dough2.add(ball);
+  dough2.userData.mat = ball.material;
+  dough2.userData.ball = ball;
+  makeHit(dough2, 0.6, 0.6, 0.6);
+}
+dough2.position.set(6.1, 0, 1.05);
+dough2.userData.home = dough2.position.clone();
+scene.add(dough2);
+addOutlinesTo(dough2);
+
+/* one physical crate per topping, in three rows beside the tray */
+const crates = [];
+function makeCrate(top, x, z, tier = 0) {
+  const g = new THREE.Group();
+  g.userData.tier = tier;
+  /* crate walls tinted toward the topping color — the bar should read like a candy counter */
+  const wallCol = new THREE.Color(top.colors[0]).lerp(new THREE.Color(0xc9b58f), 0.45).getHex();
+  const kraft = toon(wallCol);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.22), kraft); base.position.y = 0.025;
+  const wB = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.03), kraft); wB.position.set(0, 0.06, -0.095);
+  const wF = wB.clone(); wF.position.z = 0.095;
+  const wL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.22), kraft); wL.position.set(-0.135, 0.06, 0);
+  const wR = wL.clone(); wR.position.x = 0.135;
+  /* heaped fill, proud of the walls */
+  const fill = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.11, 0.17), toon(top.colors[0])); fill.position.y = 0.095;
+  /* label tilts up toward the camera so rows behind stay readable */
+  const label = labelPlane(top.short, 0.24, 0.078, '#5a3a28');
+  label.position.set(0, 0.085, 0.125);
+  label.rotation.x = -0.5;
+  g.add(base, wB, wF, wL, wR, fill, label);
+  /* a scatter of real pieces on the heap — multicolor palettes show their whole range */
+  const ns = top.colors.length > 2 ? 7 : 4;
+  for (let i = 0; i < ns; i++) {
+    const bit = makeTopPiece(top, 1.25);
+    bit.position.set((Math.random() - 0.5) * 0.19, 0.162, (Math.random() - 0.5) * 0.1);
+    bit.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+    g.add(bit);
+  }
+  makeHit(g, 0.3, 0.26, 0.26);
+  g.position.set(x, tier * 0.09, z); /* tiered rack: rows step up toward the back */
+  g.userData.home = g.position.clone();
+  g.userData.topping = top;
+  g.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow = true; });
+  scene.add(g);
+  addOutlinesTo(g);
+  crates.push(g);
+  return g;
+}
+/* rows step back AND up; row 0 is the farthest/highest so every label clears the row in front */
+const CRATE_ROWS = [[0, 5], [5, 10], [10, 15], [15, 19], [19, 23]];
+CRATE_ROWS.forEach(([a, b], ri) => {
+  const tier = CRATE_ROWS.length - 1 - ri;
+  const z = 0.1 + ri * 0.42;
+  for (let i = a; i < b; i++) makeCrate(TOPPINGS[i], 8.95 + (i - a) * 0.38 + (ri % 2 ? 0.19 : 0), z, tier);
+});
+/* the whole crate rack can roll to another station (it follows you to frosting) */
+let cratesOffset = 0;
+function moveCratesTo(offset) {
+  const dx = offset - cratesOffset;
+  if (!dx) return;
+  cratesOffset = offset;
+  crates.forEach(c => { c.position.x += dx; c.userData.home.x += dx; });
+}
+
+const s2 = { portions: 0, topped: 0 };
+function startStage2() {
+  stage = 2;
+  state = 's2wait';
+  setHUDStage(2, 'dress it up');
+  document.querySelector('.toolrail').style.display = 'none';
+  document.getElementById('shapePanel').style.display = 'block';
+  setChecklist('<span class="t">Mix-ins</span>' + chipRow('scoops', 'Shape ×6 onto the tray') + chipRow('tops', 'Toppings — optional'));
+  dough2.userData.mat.color.copy(doughCol());
+  if (!dyesMoved) { /* the dye rack follows to the toppings counter */
+    dyesMoved = true;
+    dyeBottles.forEach(b => { b.position.x += 8.6; b.userData.home.x += 8.6; });
+  }
+  dollyTo(2, () => {
+    state = 'portion';
+    setHint('Pick a <b>shape</b>, then drag the dough ball onto the tray — six times');
+  });
+}
+function spawnScoop() {
+  const slot = SLOT[scoops.length];
+  const scoop = new THREE.Group();
+  const col = doughCol().getHex();
+  const meshes = [];
+  let topY = 0.22, scatterR = 0.12;
+  if (shape.id === 'donut') {
+    /* bigger ring, slimmer tube and NO inverted-hull outline — the hull's backfaces
+       used to fill the hole and make it read as a plain dented puck */
+    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.163, 0.045, 12, 26), toon(col));
+    torus.rotation.x = Math.PI / 2; torus.position.y = 0.06;
+    torus.scale.y = 0.78;
+    torus.userData.hasHull = true;
+    /* shaded inner wall — without it the hole reads as a shallow dimple at this camera angle */
+    const holeCol = new THREE.Color(col).multiplyScalar(0.55).getHex();
+    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.113, 0.1, 0.1, 18, 1, true),
+      toon(holeCol, { side: THREE.DoubleSide }));
+    hole.position.y = 0.055;
+    hole.userData.hasHull = true;
+    meshes.push(torus, hole); topY = 0.115; scatterR = 0.15;
+  } else if (shape.id === 'big') {
+    const blob = new THREE.Mesh(new THREE.SphereGeometry(0.225, 16, 12), toon(col));
+    blob.scale.set(1, 0.48, 1); blob.position.y = 0.08;
+    meshes.push(blob); topY = 0.19; scatterR = 0.17;
+  } else if (shape.id === 'claw') {
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 10), toon(col));
+    body.scale.set(1.25, 0.58, 0.85); body.position.y = 0.085;
+    meshes.push(body);
+    for (let i = -1; i <= 1; i++) {
+      const toe = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), toon(col));
+      toe.position.set(i * 0.09, 0.07, 0.14);
+      meshes.push(toe);
+    }
+    topY = 0.17; scatterR = 0.11;
+  } else {
+    const blob = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 10), toon(col));
+    blob.scale.set(1, 0.68, 1); blob.position.y = 0.1;
+    meshes.push(blob); topY = 0.22; scatterR = 0.12;
+  }
+  meshes.forEach(m => { m.castShadow = true; scoop.add(m); });
+  scoop.userData.meshes = meshes;
+  scoop.userData.blob = meshes[0];
+  scoop.userData.topY = topY;
+  scoop.userData.scatterR = scatterR;
+  scoop.userData.shape = shape.id;
+  makeHit(scoop, 0.46, 0.34, 0.46);
+  scoop.position.copy(slot);
+  scoop.scale.setScalar(0.01);
+  tray2.add(scoop);
+  scoops.push(scoop);
+  addOutlinesTo(scoop);
+  tween(0.3, k => scoop.scale.setScalar(0.01 + k * 0.99), null, easeBack);
+  snd(220 + scoops.length * 30, 0.1, 'sine', 0.14);
+  s2.portions++;
+  /* shrink only the visible ball — the grab zone stays full-size */
+  const bs = Math.max(0.3, 1 - s2.portions * 0.12);
+  dough2.userData.ball.scale.set(bs, 0.92 * bs, bs);
+  if (s2.portions >= 6) {
+    markChip('scoops');
+    tween(0.25, k => { const s = 0.3 * (1 - k) + 0.003; dough2.userData.ball.scale.set(s, 0.92 * s, s); }, () => { dough2.visible = false; });
+    state = 'top';
+    setHint('Sprinkle any <b>toppings</b> you like — or head straight to the oven');
+    contBtn.textContent = 'To the oven →';
+    contBtn.style.display = 'block';
+  } else {
+    setHint(`${6 - s2.portions} more to go — switch <b>shape</b> any time`);
+  }
+}
+function nearestScoop(dragObj) {
+  const a = sXY(dragObj.position);
+  let best = null, bd = sdim() * 0.1;
+  const wp = new THREE.Vector3();
+  scoops.forEach(s => {
+    s.getWorldPosition(wp);
+    wp.y += 0.2; /* compare against the scoop TOP — where a hovering bag visually sits */
+    const b = sXY(wp);
+    let d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (s.userData.chips) d *= 1.6; /* bias toward scoops that still need chips */
+    if (d < bd) { bd = d; best = s; }
+  });
+  return best;
+}
+function nearestIn(dragObj, objs, yOff, maxFrac = 0.1) {
+  const a = sXY(dragObj.position);
+  let best = null, bd = sdim() * maxFrac;
+  const wp = new THREE.Vector3();
+  objs.forEach(o => {
+    o.getWorldPosition(wp); wp.y += yOff;
+    const b = sXY(wp);
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < bd) { bd = d; best = o; }
+  });
+  return { obj: best, d: bd };
+}
+/* pick the crate whose label is nearest the pointer on SCREEN — raycasting a dense
+   tiered rack from an oblique camera picks the row behind far too often */
+function pickByScreen(list, px, py, yOff, frac) {
+  let best = null, bd = sdim() * frac;
+  const wp = new THREE.Vector3();
+  list.forEach(c => {
+    if (c.userData.used) return;
+    c.getWorldPosition(wp); wp.y += yOff;
+    const s = sXY(wp);
+    const d = Math.hypot(px - s.x, py - s.y);
+    if (d < bd) { bd = d; best = c; }
+  });
+  return best;
+}
+const crateAtPointer = (px, py) => pickByScreen(crates, px, py, 0.14, 0.075);
+/* small bottles hide behind the ingredient row from this camera — pick them by screen too */
+const dyeAtPointer = (px, py) => pickByScreen(dyeBottles, px, py, 0.1, 0.045);
+function tintScoop(scoop, dye) {
+  scoop.userData.tint = dye;
+  const c = doughCol().lerp(new THREE.Color(dye), 0.55);
+  scoop.userData.meshes.forEach(m => m.material.color.copy(c));
+  snd(560, 0.09, 'sine', 0.1);
+  setHint('That cookie takes the <b>color</b> — it bakes tinted too');
+}
+function nearestCrate(dragObj) {
+  const a = sXY(dragObj.position);
+  let best = null, bd = sdim() * 0.09;
+  const wp = new THREE.Vector3();
+  crates.forEach(c => {
+    c.getWorldPosition(wp); wp.y += 0.15;
+    const b = sXY(wp);
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < bd) { bd = d; best = c; }
+  });
+  return best;
+}
+function tintTopping(top, dye) {
+  top.baseColors = top.baseColors || [...top.colors];
+  top.colors = top.baseColors.map(c => new THREE.Color(c).lerp(new THREE.Color(dye), 0.6).getHex());
+  const idx = crates.findIndex(c => c.userData.topping === top);
+  const old = crates[idx];
+  const px = old.position.x, pz = old.position.z, tier = old.userData.tier || 0;
+  scene.remove(old);
+  crates.splice(idx, 1);
+  makeCrate(top, px, pz, tier);
+  snd(600, 0.1, 'triangle', 0.1);
+  setHint(`<b>${top.label}</b> re-tinted — sprinkle away`);
+}
+function highlightScoop(target) {
+  scoops.forEach(s => {
+    s.scale.setScalar(s === target ? 1.22 : 1);
+    s.userData.blob.material.emissive.setHex(s === target ? 0x4a3214 : 0x000000);
+  });
+}
+function sprinkleOn(scoop, top) {
+  const ud = scoop.userData;
+  const wp = new THREE.Vector3();
+  scoop.getWorldPosition(wp);
+  const n = top.kind === 'stick' ? 14 : 10;
+  for (let i = 0; i < n; i++) {
+    spawnDrop({
+      obj: makeTopPiece(top),
+      pos: jitter(new THREE.Vector3(wp.x, wp.y + 0.5, wp.z), 0.07),
+      spin: 3 + Math.random() * 3,
+      floorY: wp.y + ud.topY + 0.03,
+      onLand: d => {
+        /* the falling piece itself settles onto the cookie */
+        const a = Math.random() * Math.PI * 2;
+        let rr, y;
+        if (ud.shape === 'donut') { rr = 0.085 + Math.random() * 0.055; y = ud.topY + 0.006; }
+        else { rr = Math.random() * ud.scatterR; y = ud.topY + 0.012 - (rr * rr) / (ud.scatterR * ud.scatterR) * 0.045; }
+        d.position.set(Math.cos(a) * rr, y, Math.sin(a) * rr);
+        d.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        d.userData.isTop = true;
+        if (ud.frostCap) d.position.y += ud.frostRaise || 0.03;
+        scoop.add(d);
+      }
+    });
+  }
+  snd(500, 0.05, 'triangle', 0.08);
+  if (!ud.topped) { ud.topped = true; s2.topped++; markChip('tops'); }
+  setHint(`<b>${top.label}</b> on! Mix and match — or ${stage === 4 ? 'on to packing' : 'head to the oven'}`);
+}
+
+/* --- station 3: bake --- */
+const oven = new THREE.Group();
+let dialNeedle, dialHitMesh, ovenGlowMat, dialG;
+{
+  const P = toon(0x9ec6b5);
+  const th = 0.08;
+  const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.5, th), P); back.position.set(0, 0.75, -0.46);
+  const left = new THREE.Mesh(new THREE.BoxGeometry(th, 1.5, 1.0), P); left.position.set(-1.01, 0.75, 0);
+  const right = left.clone(); right.position.x = 1.01;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.22, 1.0), P); top.position.set(0, 1.39, 0);
+  const bottom = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 1.0), P); bottom.position.set(0, 0.06, 0);
+  oven.add(back, left, right, top, bottom);
+  /* a real dark CAVITY (five inner faces) instead of one floating back panel —
+     no more green gaps down the sides and along the floor */
+  ovenGlowMat = new THREE.MeshBasicMaterial({ color: 0x1d140d });
+  const linerDark = toon(0x241a12);
+  const cav = [
+    [[1.96, 1.24, 0.03], [0, 0.74, -0.405]],
+    [[0.03, 1.24, 0.92], [-0.965, 0.74, 0.04]],
+    [[0.03, 1.24, 0.92], [0.965, 0.74, 0.04]],
+    [[1.96, 0.03, 0.92], [0, 1.355, 0.04]],
+    [[1.96, 0.03, 0.92], [0, 0.125, 0.04]],
+  ];
+  cav.forEach(([d, pos], i) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...d), i === 0 ? ovenGlowMat : linerDark);
+    m.position.set(...pos);
+    m.userData.hasHull = true;
+    oven.add(m);
+  });
+  /* glazed door: tinted pane in a chrome frame */
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 1.06),
+    new THREE.MeshBasicMaterial({ color: 0x2b2018, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
+  glass.position.set(0, 0.72, 0.515);
+  glass.renderOrder = 2;
+  glass.userData.hasHull = true;
+  oven.add(glass);
+  const fr = toon(0xcfd3d8), ft = 0.055;
+  [[[1.9, ft, 0.04], [0, 1.26, 0.52]], [[1.9, ft, 0.04], [0, 0.185, 0.52]],
+   [[ft, 1.12, 0.04], [-0.93, 0.72, 0.52]], [[ft, 1.12, 0.04], [0.93, 0.72, 0.52]]]
+    .forEach(([d, pos]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(...d), fr); m.position.set(...pos); oven.add(m); });
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.15, 10), toon(0xd9dadd));
+  handle.rotation.z = Math.PI / 2;
+  handle.position.set(-0.25, 1.31, 0.56);
+  oven.add(handle);
+  dialG = new THREE.Group();
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.06, 16), toon(0xd9dadd));
+  dial.rotation.x = Math.PI / 2;
+  dialNeedle = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.065, 0.02), toon(0xb5484a));
+  dialNeedle.position.set(0, 0.045, 0.042);
+  dialG.add(dial, dialNeedle);
+  dialG.position.set(0.78, 1.39, 0.52);
+  dialHitMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.3), new THREE.MeshBasicMaterial({ visible: false }));
+  dialHitMesh.userData.group = dialG;
+  dialG.add(dialHitMesh);
+  oven.add(dialG);
+}
+oven.position.set(16.3, 0, -0.55);
+oven.traverse(m => { if (m.isMesh && m.material.visible !== false && m.material.transparent !== true) m.castShadow = true; });
+scene.add(oven);
+addOutlinesTo(oven);
+
+const s3 = { bakeP: 0, baking: false, quality: null, warned1: false, warned2: false };
+function bakeColor(p) {
+  /* browning starts from the chosen dough flavor (and any dye) */
+  const base = doughCol();
+  const gold = base.clone().lerp(new THREE.Color(0xc98a3e), 0.6);
+  if (p < 0.6) return base.lerp(gold, p / 0.6);
+  return gold.lerp(new THREE.Color(0x3d2212), (p - 0.6) / 0.4);
+}
+function startStage3() {
+  stage = 3;
+  state = s3.dialSet ? 'load' : 'dial'; /* dial stays set if we went back and returned */
+  setHUDStage(3, 'into the oven');
+  setChecklist('<span class="t">Bake</span>' + chipRow('dial', 'Set the dial to 350°') + chipRow('load', 'Tray in the oven') + chipRow('golden', 'Pull at golden'));
+  if (s3.dialSet) markChip('dial');
+  const from = tray2.position.clone();
+  tween(1.2, k => tray2.position.lerpVectors(from, new THREE.Vector3(15.0, 0, 0.75), k));
+  dollyTo(3, () => setHint(s3.dialSet ? 'Slide the <b>tray</b> into the oven' : 'Click the <b>dial</b> to set the temperature'));
+}
+function setDial() {
+  if (state !== 'dial') return;
+  state = 'load';
+  s3.dialSet = true;
+  markChip('dial');
+  tween(0.4, k => { dialG.rotation.z = -2.4 * k; });
+  snd(700, 0.06, 'square', 0.08);
+  setHint('Now <b>slide the tray</b> into the oven');
+}
+function insertTray() {
+  state = 'baking';
+  markChip('load');
+  s3.bakeP = 0; s3.baking = true;
+  const from = tray2.position.clone();
+  tray2.rotation.z = 0;
+  tween(0.8, k => tray2.position.lerpVectors(from, new THREE.Vector3(16.3, 0.14, -0.55), k), () => {
+    bakebar.style.display = 'block';
+    setHint('Watch the glass — <b>drag the tray out</b> at golden');
+    snd(140, 0.4, 'sine', 0.08);
+  });
+}
+function pullTray() {
+  if (state !== 'baking') return;
+  state = 's3done';
+  s3.baking = false;
+  dragging = null;
+  bakebar.style.display = 'none';
+  const p = s3.bakeP;
+  s3.quality = p < 0.45 ? 'pale' : p <= 0.78 ? 'golden' : p <= 0.92 ? 'dark' : 'burnt';
+  const from = tray2.position.clone();
+  tween(0.7, k => tray2.position.lerpVectors(from, new THREE.Vector3(16.3, 0, 0.85), k), () => {
+    if (s3.quality === 'golden') markChip('golden');
+    snd(520, 0.1); snd(660, 0.15);
+    const card = {
+      pale: ['A touch pale', 'Pulled early — soft and blonde, still tasty.'],
+      golden: ['Golden brown!', 'Pulled at the perfect moment. Bakery-window material.'],
+      dark: ['Rustic & toasty', 'A shade past golden — deep caramel edges. Some people pay extra for that.'],
+      burnt: ['Charcoal chic', 'Well… those are for dunking. The smoke alarm sends its regards.'],
+    }[s3.quality];
+    setHint(card[1]);
+    showCard(card[0], card[1], 'On to frosting →', startFrost);
+  });
+}
+
+/* --- station 4: frosting (optional) --- */
+const s4f = { base: null, milk: false, ready: false, color: 0x5a3a28, frosted: 0 };
+let frostStyle = 'swirl';
+const FROSTSTYLES = [
+  { id: 'swirl', label: 'Swirl frosting', dot: 0xd9aab2 },
+  { id: 'drizzle', label: 'Drizzle', dot: 0x8a5a30 },
+];
+buildPalette(document.getElementById('frostStyleRow'), FROSTSTYLES, f => f.dot, f => {
+  frostStyle = f.id;
+  setHint(f.id === 'swirl' ? 'Thick <b>swirl</b> it is' : 'A glossy <b>drizzle</b> — nice. It even goes over frosting');
+  snd(420, 0.06, 'triangle', 0.08);
+}, FROSTSTYLES[0]);
+const stoveG = new THREE.Group();
+{
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.09, 0.56), toon(0x4a4a50));
+  plate.position.y = 0.045;
+  const burner = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.035, 16), toon(0x2e2e33));
+  burner.position.y = 0.1;
+  stoveG.add(plate, burner);
+}
+stoveG.position.set(26.35, 0, -0.5);
+stoveG.traverse(m => { if (m.isMesh) m.castShadow = true; });
+scene.add(stoveG);
+addOutlinesTo(stoveG);
+
+const potG = new THREE.Group();
+let potFill;
+{
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.155, 0.15, 16), toon(0xb9c1c9));
+  pot.position.y = 0.075;
+  const handleP = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 8), toon(0x3f2d24));
+  handleP.rotation.z = Math.PI / 2;
+  handleP.position.set(0.27, 0.12, 0);
+  potFill = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.045, 16), toon(0x5a3a28));
+  potFill.position.y = 0.13;
+  potFill.visible = false;
+  potG.add(pot, handleP, potFill);
+  makeHit(potG, 0.5, 0.35, 0.45);
+}
+potG.position.set(26.35, 0.12, -0.5);
+potG.userData.home = potG.position.clone();
+potG.userData.dragY = 0.6;
+potG.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow = true; });
+scene.add(potG);
+addOutlinesTo(potG);
+
+function makeFrostItem(build, x, fcolor, z = 1.15) {
+  const g = new THREE.Group();
+  build(g);
+  makeHit(g, 0.5, 0.6, 0.45);
+  g.position.set(x, 0, z);
+  g.userData.home = g.position.clone();
+  g.userData.fcolor = fcolor;
+  g.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow = true; });
+  scene.add(g);
+  addOutlinesTo(g);
+  return g;
+}
+const chocBar = makeFrostItem(g => {
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.18), toon(0x4a2e1c));
+  bar.position.y = 0.035;
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.14), toon(0x5a3a28));
+  ridge.position.y = 0.08;
+  g.add(bar, ridge);
+}, 23.60, 0x6d4530, 1.5);
+const whiteBar = makeFrostItem(g => {
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.18), toon(0xf2e8d6));
+  bar.position.y = 0.035;
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.14), toon(0xf8f1e4));
+  ridge.position.y = 0.08;
+  g.add(bar, ridge);
+}, 24.06, 0xf2e8d6, 1.5);
+const berryG = makeFrostItem(g => {
+  [-0.06, 0.07].forEach((dx, i) => {
+    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), toon(0xc1434c));
+    berry.scale.y = 1.15; berry.position.set(dx, 0.08, i * 0.05 - 0.02);
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.04, 6), toon(0x7fa377));
+    leaf.position.set(dx, 0.17, i * 0.05 - 0.02);
+    g.add(berry, leaf);
+  });
+}, 24.52, 0xd97f93, 1.5);
+const milkF = makeFrostItem(g => {
+  const prof = [
+    new THREE.Vector2(0, 0), new THREE.Vector2(0.085, 0.005), new THREE.Vector2(0.09, 0.2),
+    new THREE.Vector2(0.06, 0.27), new THREE.Vector2(0.04, 0.31), new THREE.Vector2(0.042, 0.37),
+  ];
+  const bottle = new THREE.Mesh(new THREE.LatheGeometry(prof, 16),
+    toon(0xdfe8e4, { transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+  const milkIn = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.078, 0.2, 12), toon(0xf7f4ec));
+  milkIn.position.y = 0.11;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.028, 10), toon(0xb5484a));
+  cap.position.y = 0.385;
+  g.add(bottle, milkIn, cap);
+}, 26.42, 0xf7f4ec, 1.5);
+/* three more bases: pistachio paste, blueberry, caramel sauce */
+const pistJar = makeFrostItem(g => {
+  const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.16, 14), toon(0x8fae64));
+  jar.position.y = 0.08;
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.035, 14), toon(0x5c7340));
+  lid.position.y = 0.175;
+  g.add(jar, lid);
+}, 24.98, 0x8fae64, 1.5);
+const bluebBowl = makeFrostItem(g => {
+  const bowl2 = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.08, 0.09, 14), toon(0xf2ead9));
+  bowl2.position.y = 0.045;
+  for (let i = 0; i < 5; i++) {
+    const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 6), toon(i % 2 ? 0x4f5b8f : 0x3d4a7a));
+    b2.position.set((Math.random() - 0.5) * 0.12, 0.1, (Math.random() - 0.5) * 0.12);
+    g.add(b2);
+  }
+  g.add(bowl2);
+}, 25.44, 0x7d6fae, 1.5);
+const caramelJug = makeFrostItem(g => {
+  const jug = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.17, 14), toon(0xc98a3e, { transparent: true, opacity: 0.94 }));
+  jug.position.y = 0.085;
+  const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.06, 10), toon(0xb3782f));
+  spout.position.y = 0.19;
+  g.add(jug, spout);
+}, 25.90, 0xc98a3e, 1.5);
+
+const frostBases = [chocBar, whiteBar, berryG, pistJar, bluebBowl, caramelJug];
+function addToPot(item) {
+  const isMilk = item === milkF;
+  if (isMilk) {
+    if (!s4f.base) { setHint('Melt a <b>base</b> first — then stir in the milk'); return; }
+    if (!s4f.milk) { s4f.milk = true; markChip('fmilk'); }
+  } else {
+    s4f.base = item.userData.fcolor;
+    markChip('base');
+  }
+  const pm = new THREE.Vector3();
+  potG.getWorldPosition(pm);
+  for (let i = 0; i < 6; i++) spawnDrop({
+    pos: jitter(new THREE.Vector3(pm.x, pm.y + 0.5, pm.z), 0.05),
+    color: isMilk ? 0xf7f4ec : item.userData.fcolor,
+    r: 0.02,
+    geo: isMilk ? null : new THREE.BoxGeometry(0.05, 0.04, 0.05),
+    spin: 3, floorY: pm.y + 0.18,
+    onLand: () => {},
+  });
+  snd(isMilk ? 300 : 240, 0.08, 'triangle', 0.1);
+  updatePot();
+}
+function updatePot() {
+  const c = new THREE.Color(s4f.base || 0x6d4530);
+  if (s4f.milk) c.lerp(new THREE.Color(0xf7e0bd), 0.13); /* warm, keeps chocolate chocolatey */
+  s4f.color = c.getHex();
+  potFill.visible = !!s4f.base;
+  potFill.material.color.set(c);
+  if (s4f.base && s4f.milk) {
+    if (!s4f.ready) {
+      s4f.ready = true;
+      tween(0.8, k => { potFill.scale.setScalar(1 + Math.sin(k * Math.PI * 5) * 0.08); }, () => potFill.scale.setScalar(1));
+      snd(620, 0.12); snd(840, 0.18);
+    }
+    setHint('Frosting ready — drag the <b>pot</b> over a cookie to frost it');
+  } else if (s4f.base) {
+    setHint('Melting… now stir in some <b>milk</b>');
+  }
+}
+function drizzleCookie(scoop) {
+  const ud = scoop.userData;
+  if (ud.drizzleG) {
+    ud.drizzleMat.color.set(s4f.color);
+  } else {
+    /* thin wavy strands that HUG the dome — never straight rods floating above it */
+    const dm = toon(s4f.color);
+    const grp = new THREE.Group();
+    const fs = ud.frostCap && ud.frostSpec;
+    const R = fs ? ud.frostSpec.r : (ud.shape === 'donut' ? 0.17 : ud.scatterR * 1.12);
+    const baseY = fs ? ud.frostSpec.y : ud.topY - 0.015;
+    const domeH = fs ? ud.frostSpec.h : (ud.shape === 'donut' ? 0.018 : 0.05);
+    for (let i = 0; i < 4; i++) {
+      const z0 = (i - 1.5) * R * 0.44;
+      const halfX = R * Math.sqrt(Math.max(0.06, 1 - (z0 / R) ** 2));
+      const pts = [];
+      const N = 8;
+      for (let j = 0; j <= N; j++) {
+        const x = -halfX + (2 * halfX * j) / N;
+        const z = z0 + Math.sin(j * 2.3 + i * 1.7) * 0.014;
+        const d2 = (x * x + z * z) / (R * R);
+        const y = baseY + domeH * Math.sqrt(Math.max(0, 1 - d2)) + 0.007;
+        pts.push(new THREE.Vector3(x, y, z));
+      }
+      pts[0].y -= 0.014; pts[N].y -= 0.014; /* ends droop over the edge */
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.0085, 5, false), dm);
+      grp.add(tube);
+    }
+    grp.traverse(mm => { if (mm.isMesh) mm.castShadow = true; });
+    scoop.add(grp);
+    ud.drizzleG = grp;
+    ud.drizzleMat = dm;
+    if (!ud.frosted) { ud.frosted = true; s4f.frosted++; }
+    grp.scale.setScalar(0.01);
+    tween(0.25, k => grp.scale.setScalar(0.01 + k * 0.99), null, easeBack);
+  }
+  markChip('frost');
+  snd(500, 0.07, 'sine', 0.1);
+  setHint(`Drizzled! <b>${s4f.frosted}</b> finished — keep going, or on to packing`);
+}
+function frostCookie(scoop) {
+  const ud = scoop.userData;
+  if (frostStyle === 'drizzle') { drizzleCookie(scoop); return; }
+  if (!ud.frostCap) {
+    /* icing DRAPES over the dough — a shell following the dome, edge dipping past the widest
+       point, with drips running down — never a disk sitting on top */
+    const fm = toon(s4f.color, { side: THREE.DoubleSide });
+    const grp = new THREE.Group();
+    if (ud.shape === 'donut') {
+      const glaze = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.055, 10, 22), fm);
+      glaze.rotation.x = Math.PI / 2;
+      glaze.scale.set(1.04, 1.04, 0.6);
+      glaze.position.y = 0.088;
+      grp.add(glaze);
+      ud.frostSpec = { r: 0.17, y: 0.1, h: 0.022 };
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + Math.random() * 0.8;
+        const drip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), fm);
+        drip.scale.set(1, 1.9, 1);
+        drip.position.set(Math.cos(a) * 0.168, 0.062, Math.sin(a) * 0.168);
+        grp.add(drip);
+      }
+    } else {
+      /* Crumbl-style: a THICK swooped buttercream layer on top, cookie edge still visible,
+         finished with a piped swirl ridge and tip — clean, no drips */
+      const spec = {
+        classic: { pr: 0.142, px: 1, pz: 1, py: 0.178, rr: 0.085, ry: 0.233, ty: 0.262 },
+        big: { pr: 0.19, px: 1, pz: 1, py: 0.152, rr: 0.112, ry: 0.212, ty: 0.238 },
+        claw: { pr: 0.138, px: 1.26, pz: 0.86, py: 0.15, rr: 0.08, ry: 0.198, ty: 0.222 },
+      }[ud.shape];
+      const pad = new THREE.Mesh(new THREE.SphereGeometry(spec.pr, 18, 12), fm);
+      pad.scale.set(spec.px, 0.34, spec.pz);
+      pad.position.y = spec.py;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(spec.rr, 0.034, 9, 20), fm);
+      ring.rotation.x = Math.PI / 2;
+      ring.scale.set(spec.px, spec.pz, 1);
+      ring.position.y = spec.ry;
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 8), fm);
+      tip.scale.set(1, 0.75, 1);
+      tip.position.y = spec.ty;
+      const ring2 = new THREE.Mesh(new THREE.TorusGeometry(spec.rr * 1.6, 0.028, 9, 22), fm);
+      ring2.rotation.x = Math.PI / 2;
+      ring2.scale.set(spec.px, spec.pz, 1);
+      ring2.position.y = spec.ry - 0.038;
+      grp.add(pad, ring2, ring, tip);
+      /* remember the icing surface so a later drizzle rides it, not the bare cookie */
+      ud.frostSpec = { r: spec.pr * 0.92, y: spec.py + 0.02, h: spec.pr * 0.34 };
+    }
+    grp.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    scoop.add(grp);
+    ud.frostCap = grp;
+    ud.frostMat = fm;
+    ud.frosted = true;
+    s4f.frosted++;
+    addOutlinesTo(grp);
+    grp.scale.setScalar(0.01);
+    tween(0.3, k => grp.scale.setScalar(0.01 + k * 0.99), null, easeBack);
+    /* toppings resurface on top of the icing */
+    const raise = { classic: 0.038, big: 0.06, claw: 0.05, donut: 0.025 }[ud.shape];
+    ud.frostRaise = raise;
+    scoop.children.forEach(c => { if (c.userData.isTop) c.position.y += raise; });
+  } else {
+    ud.frostMat.color.set(s4f.color);
+  }
+  markChip('frost');
+  snd(430 + s4f.frosted * 25, 0.08, 'sine', 0.12);
+  setHint(`Frosted <b>${s4f.frosted}</b> — keep going, or head to packing`);
+}
+function startFrost() {
+  stage = 4;
+  state = 'frost';
+  setHUDStage(4, 'frosting');
+  setChecklist('<span class="t">Frosting (optional)</span>' + chipRow('base', 'Melt a base in the pot') + chipRow('fmilk', 'Stir in milk') + chipRow('frost', 'Frost or drizzle cookies'));
+  moveCratesTo(12.6); /* the topping rack rolls along — you can still sprinkle after frosting */
+  document.getElementById('frostStylePanel').style.display = 'block';
+  const from = tray2.position.clone();
+  tween(1.2, k => tray2.position.lerpVectors(from, new THREE.Vector3(24.85, 0, 0.3), k));
+  contBtn.textContent = 'To packing →';
+  contBtn.style.display = 'block';
+  dollyTo(4, () => setHint('Optional: melt a <b>base</b> + milk, then frost or drizzle — toppings still work too'));
+}
+
+/* --- station 5: box & bow --- */
+/* blush first — the signature bakery-box pink */
+const BOXCOLORS = [
+  { id: 'blush', label: 'Blush', c: 0xd9aab2, lid: 0xcf9aa4 },
+  { id: 'kraft', label: 'Kraft', c: 0xcbb490, lid: 0xbfa87f },
+  { id: 'mint', label: 'Mint', c: 0xa9c7b8, lid: 0x9bb9a9 },
+  { id: 'lavender', label: 'Lavender', c: 0xb3a7c9, lid: 0xa497bb },
+  { id: 'cream', label: 'Cream', c: 0xf0e8d6, lid: 0xe4dac4 },
+];
+const RIBBONS = [
+  { id: 'brick', label: 'Brick red', c: '#b5484a' },
+  { id: 'sage', label: 'Sage', c: '#8db8a5' },
+  { id: 'butter', label: 'Butterscotch', c: '#cf9f45' },
+  { id: 'navy', label: 'Blueberry', c: '#5b7fc9' },
+  { id: 'cocoa', label: 'Cocoa', c: '#6b4a2f' },
+];
+const STICKERS = [
+  { id: 'heart', glyph: '♥', c: '#b5484a' },
+  { id: 'star', glyph: '★', c: '#cf9f45' },
+  { id: 'seal', glyph: 'C', c: '#3f2d24' },
+  { id: 'flower', glyph: '✿', c: '#d97f93' },
+  { id: 'mono', glyph: 'M', c: '#9a6ab0' },
+];
+const TAGS = [
+  { id: 'none', label: '—', text: null },
+  { id: 'thanks', label: 'Thanks', text: 'THANK YOU' },
+  { id: 'bday', label: 'B-day', text: 'HAPPY B-DAY' },
+];
+const decor = { box: BOXCOLORS[0], ribbon: RIBBONS[0], sticker: STICKERS[0], tag: TAGS[0], glitter: false };
+const boxMat = toon(BOXCOLORS[0].c);
+const lidMat = toon(BOXCOLORS[0].lid);
+const box4 = new THREE.Group();
+{
+  /* roomy enough that six cookies sit in separate bays instead of fusing */
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.05, 1.0), boxMat); base.position.y = 0.025;
+  const wb = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.28, 0.05), boxMat); wb.position.set(0, 0.14, -0.475);
+  const wl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 1.0), boxMat); wl.position.set(-0.695, 0.14, 0);
+  const wr = wl.clone(); wr.position.x = 0.695;
+  const wf = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.16, 0.05), boxMat); wf.position.set(0, 0.08, 0.475);
+  box4.add(base, wb, wl, wr, wf);
+  /* compartment dividers — one bay per cookie, bakery-box style */
+  const dv1 = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.1, 0.94), boxMat); dv1.position.set(-0.235, 0.085, 0);
+  const dv2 = dv1.clone(); dv2.position.x = 0.235;
+  const dv3 = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.1, 0.022), boxMat); dv3.position.set(0, 0.085, 0);
+  box4.add(dv1, dv2, dv3);
+}
+box4.position.set(32.7, 0, 0.1);
+box4.traverse(m => { if (m.isMesh) m.castShadow = true; });
+scene.add(box4);
+addOutlinesTo(box4);
+const lid4 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 1.06), lidMat);
+lid4.position.set(34.35, 0.028, 0.5);
+lid4.rotation.set(0, 0.16, 0);
+lid4.castShadow = true;
+scene.add(lid4);
+addOutlinesTo(lid4);
+
+const s4 = { packed: 0 };
+function startPack() {
+  stage = 5;
+  state = s4.packed >= 6 ? 'decor' : 'pack';
+  setHUDStage(5, 'box & bow');
+  setChecklist('<span class="t">Pack</span>' + chipRow('boxed', 'Cookies in the box ' + s4.packed + '/6') + chipRow('ribbon', 'Finish the box'));
+  if (s4.packed >= 6) markChip('boxed');
+  const from = tray2.position.clone();
+  tween(1.2, k => tray2.position.lerpVectors(from, new THREE.Vector3(30.5, 0, 0.5), k), () => {
+    scoops.forEach(s => {
+      if (s.parent === tray2) { /* only cookies still riding the tray */
+        scene.attach(s);
+        s.userData.rackPos = s.position.clone();
+      }
+    });
+  });
+  dollyTo(5, () => {
+    if (state === 'decor') { swpanel.style.display = 'block'; setHint('Finish the box → pick <b>box, ribbon, sticker</b>… glitter?'); }
+    else setHint('Drag each cookie into the box');
+  });
+}
+const PACKSLOTS = [[-0.47, -0.235], [0, -0.235], [0.47, -0.235], [-0.47, 0.235], [0, 0.235], [0.47, 0.235]];
+function placeCookie(scoop, gx, gz) {
+  /* snap to the nearest FREE slot of a 3×2 grid — tidy box, no overlap, drop point still matters */
+  const CX = 32.7, CZ = 0.1;
+  const taken = new Set(scoops.filter(o => o !== scoop && o.userData.packed).map(o => o.userData.boxSlot));
+  let best = 0, bd = 1e9;
+  PACKSLOTS.forEach((p, i) => {
+    if (taken.has(i)) return;
+    const d = Math.hypot(gx - (CX + p[0]), gz - (CZ + p[1]));
+    if (d < bd) { bd = d; best = i; }
+  });
+  scoop.userData.boxSlot = best;
+  const x = CX + PACKSLOTS[best][0], z = CZ + PACKSLOTS[best][1];
+  const from = scoop.position.clone();
+  /* every shape shrinks into its own bay so cookies stay separate and under the lid */
+  const fit = { donut: 0.8, big: 0.7, claw: 0.82 }[scoop.userData.shape] || 0.88;
+  tween(0.25, k => {
+    scoop.position.lerpVectors(from, new THREE.Vector3(x, 0.05, z), k);
+    const s = 1 - (1 - fit) * k;
+    scoop.scale.set(s, s * (1 - 0.2 * k), s);
+  }, null, easeBack);
+  scoop.userData.packed = true;
+  s4.packed++;
+  snd(260 + s4.packed * 30, 0.08, 'sine', 0.12);
+  const row = checklistEl.querySelector('.chip[data-i="boxed"]');
+  if (row) row.innerHTML = '<i>✓</i>Cookies in the box ' + s4.packed + '/6';
+  if (s4.packed >= 6) {
+    markChip('boxed');
+    state = 'decor';
+    setHint('Finish the box → pick <b>box, ribbon, sticker</b>… glitter?');
+    swpanel.style.display = 'block';
+  } else {
+    setHint(`${6 - s4.packed} to go`);
+  }
+}
+function stickerTex(st) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const g = cv.getContext('2d');
+  g.beginPath(); g.arc(64, 64, 60, 0, 7); g.fillStyle = '#f7efdf'; g.fill();
+  g.lineWidth = 7; g.strokeStyle = st.c; g.stroke();
+  g.fillStyle = st.c; g.font = 'bold 66px Georgia, serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(st.glyph, 64, 68);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function finalizeBox() {
+  if (state !== 'decor') return;
+  state = 's4busy';
+  swpanel.style.display = 'none';
+  setHint('Tying the bow…');
+  const lp = lid4.position.clone(), lr = lid4.rotation.y;
+  tween(0.8, k => {
+    lid4.position.lerpVectors(lp, new THREE.Vector3(32.7, 0.305, 0.1), k);
+    lid4.position.y += Math.sin(k * Math.PI) * 0.22; /* lifts over the rim */
+    lid4.rotation.y = lr * (1 - k);
+  }, () => {
+    snd(180, 0.1, 'sine', 0.15);
+    const rm = toon(new THREE.Color(decor.ribbon.c).getHex());
+    const ribbon = new THREE.Group();
+    /* bands across the lid top, wrapping down all four faces */
+    const bandX = new THREE.Mesh(new THREE.BoxGeometry(1.54, 0.03, 0.1), rm); bandX.position.y = 0.338;
+    const bandZ = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 1.1), rm); bandZ.position.y = 0.338;
+    const dropL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.34, 0.1), rm); dropL.position.set(-0.755, 0.17, 0);
+    const dropR = dropL.clone(); dropR.position.x = 0.755;
+    const dropF = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.03), rm); dropF.position.set(0, 0.17, 0.535);
+    const dropB = dropF.clone(); dropB.position.z = -0.535;
+    /* upright fanned bow at the lid center */
+    const bowGeo = new THREE.TorusGeometry(0.058, 0.022, 8, 16);
+    const bowL = new THREE.Mesh(bowGeo, rm); bowL.position.set(-0.07, 0.392, 0); bowL.rotation.set(0.15, 0.35, 0.45);
+    const bowR = new THREE.Mesh(bowGeo, rm); bowR.position.set(0.07, 0.392, 0); bowR.rotation.set(0.15, -0.35, -0.45);
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.034, 8, 8), rm); knot.position.y = 0.362;
+    ribbon.add(bandX, bandZ, dropL, dropR, dropF, dropB, bowL, bowR, knot);
+    ribbon.position.set(32.7, 0, 0.1);
+    ribbon.scale.setScalar(0.01);
+    scene.add(ribbon);
+    addOutlinesTo(ribbon);
+    tween(0.6, k => ribbon.scale.setScalar(0.01 + 0.99 * k), () => {
+      markChip('ribbon');
+      snd(520, 0.1); snd(780, 0.2);
+      /* sticker stamps onto the lid corner */
+      const sticker = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.018, 18), toon(0xf7efdf));
+      const stLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16),
+        new THREE.MeshBasicMaterial({ map: stickerTex(decor.sticker), transparent: true }));
+      stLabel.rotation.x = -Math.PI / 2;
+      stLabel.position.y = 0.011;
+      sticker.add(stLabel);
+      sticker.position.set(33.18, 1.0, 0.33);
+      scene.add(sticker);
+      addOutlinesTo(sticker);
+      tween(0.3, k => { sticker.position.y = 1.0 - (1.0 - 0.343) * k; }, () => {
+        snd(200, 0.08, 'square', 0.12);
+        /* optional gift tag lands beside the bow */
+        if (decor.tag.text) {
+          const tag = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.014, 0.14), toon(0xf7efdf));
+          const tagLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.23, 0.1),
+            new THREE.MeshBasicMaterial({ map: labelTex(decor.tag.text, '#f7efdf', '#b5484a'), transparent: true }));
+          tagLabel.rotation.x = -Math.PI / 2;
+          tagLabel.position.y = 0.009;
+          tag.add(tagLabel);
+          tag.position.set(32.17, 0.345, 0.33);
+          tag.rotation.y = 0.25;
+          scene.add(tag);
+          addOutlinesTo(tag);
+          tag.scale.setScalar(0.01);
+          tween(0.3, k => tag.scale.setScalar(0.01 + 0.99 * k), null, easeBack);
+        }
+        /* glitter dusting */
+        if (decor.glitter) {
+          for (let i = 0; i < 22; i++) {
+            spawnDrop({
+              geo: new THREE.OctahedronGeometry(0.009),
+              color: Math.random() < 0.5 ? 0xe8c87a : 0xf7efdf,
+              mat: { emissive: new THREE.Color(0x4a3a14) },
+              pos: jitter(new THREE.Vector3(32.7, 0.85, 0.1), 0.42),
+              spin: 6 + Math.random() * 6,
+              floorY: 0.348,
+              onLand: d => {
+                const fleck = new THREE.Mesh(d.geometry, d.material);
+                fleck.position.set(d.position.x, 0.345, d.position.z);
+                fleck.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+                scene.add(fleck);
+              },
+            });
+          }
+          snd(1100, 0.2, 'triangle', 0.06); snd(1500, 0.25, 'triangle', 0.05);
+        }
+        tween(0.7, () => {}, () => { /* let the moment breathe before the card */
+          let q = { pale: 'lightly baked', golden: 'perfectly golden', dark: 'extra-toasty', burnt: 'boldly charred' }[s3.quality || 'golden'];
+          if (s3.quality === 'golden' && flavor.id !== 'classic') q = 'perfectly baked';
+          const flav = flavor.id === 'classic' ? '' : flavor.label.toLowerCase() + ' ';
+          /* name the shapes */
+          const counts = {};
+          scoops.forEach(s => { counts[s.userData.shape] = (counts[s.userData.shape] || 0) + 1; });
+          const sn = { classic: ['cookie', 'cookies'], big: ['big cookie', 'big cookies'], donut: ['donut', 'donuts'], claw: ['bear claw', 'bear claws'] };
+          const parts = Object.entries(counts).map(([k, n]) => `${n} ${sn[k][n > 1 ? 1 : 0]}`);
+          const shapeList = parts.length > 1
+            ? ' — ' + parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] + ' —'
+            : '';
+          const noun = parts.length > 1 ? 'treats' : sn[Object.keys(counts)[0]][1];
+          const bits = [];
+          if (s2.topped > 0) bits.push('loaded with toppings');
+          if (doughDye) bits.push('in a custom colour');
+          if (s4f.frosted > 0) bits.push('frosted to order');
+          if (scoops.some(s => s.userData.drizzleG)) bits.push('finished with a glossy drizzle');
+          if (decor.glitter) bits.push('with a dusting of glitter');
+          const extra = bits.length
+            ? ', ' + (bits.length > 1 ? bits.slice(0, -1).join(', ') + ' and ' + bits[bits.length - 1] : bits[0])
+            : '';
+          state = 's4done';
+          setHint('Order complete!');
+          showCard('Order complete!', `Six ${q} ${flav}${noun}${shapeList} boxed with a bow${extra}. Maren tips generously.`, 'Bake another batch', () => {
+            /* gentle fade instead of a hard white flash */
+            const o = document.createElement('div');
+            o.style.cssText = 'position:fixed;inset:0;background:#2a1a12;opacity:0;transition:opacity .35s;z-index:99';
+            document.body.appendChild(o);
+            requestAnimationFrame(() => { o.style.opacity = '1'; });
+            setTimeout(() => location.reload(), 380);
+          });
+        });
+      });
+    }, easeBack);
+  });
+}
+/* decor panel wiring */
+function buildSwRow(rowEl, items, labelOf, bgOf, glyphOf, onPick) {
+  rowEl.innerHTML = '';
+  items.forEach((it, i) => {
+    const el = document.createElement('span');
+    el.className = 'sw' + (i === 0 ? ' sel' : '');
+    el.style.background = bgOf(it);
+    el.textContent = glyphOf ? glyphOf(it) : '';
+    if (glyphOf) el.style.color = '#f7efdf';
+    el.title = labelOf(it);
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-label', labelOf(it));
+    const pick = () => {
+      rowEl.querySelectorAll('.sw').forEach(x => x.classList.remove('sel'));
+      el.classList.add('sel');
+      onPick(it);
+      snd(420, 0.05, 'triangle', 0.07);
+    };
+    el.addEventListener('click', pick);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') pick(); });
+    rowEl.appendChild(el);
+  });
+}
+buildSwRow(document.getElementById('boxRow'), BOXCOLORS, b => b.label + ' box',
+  b => '#' + b.c.toString(16).padStart(6, '0'), null,
+  b => { decor.box = b; boxMat.color.set(b.c); lidMat.color.set(b.lid); });
+buildSwRow(document.getElementById('ribbonRow'), RIBBONS, r => r.label + ' ribbon', r => r.c, null,
+  r => { decor.ribbon = r; });
+buildSwRow(document.getElementById('stickerRow'), STICKERS, s => s.id + ' sticker', s => s.c, s => s.glyph,
+  s => { decor.sticker = s; });
+buildSwRow(document.getElementById('tagRow'), TAGS, t => 'gift tag: ' + t.label, () => '#f0e6d2', t => t.id === 'none' ? '—' : t.label[0],
+  t => { decor.tag = t; });
+document.getElementById('glitterBtn').addEventListener('click', function () {
+  decor.glitter = !decor.glitter;
+  this.classList.toggle('on', decor.glitter);
+  snd(decor.glitter ? 900 : 300, 0.07, 'triangle', 0.07);
+});
+document.getElementById('tieBtn').addEventListener('click', finalizeBox);
+
+/* ================= backwards navigation ================= */
+const backBtn = document.getElementById('backBtn');
+const fwdBtn = document.getElementById('fwdBtn');
+let viewStage = null;      /* non-null while just looking at an earlier station */
+let viewPrevHint = '';
+let viewContShown = false;
+let viewPanels = [];
+const NAV_BUSY = ['pouring', 'automix', 's2wait', 'baking', 's4busy', 's4done'];
+function navUpdate() {
+  const busy = NAV_BUSY.includes(state) || doneCardEl.classList.contains('show') || !!dragging;
+  const cur = viewStage ?? stage;
+  const wantBack = !busy && cur > 1;
+  const wantFwd = !busy && viewStage !== null;
+  const bs = wantBack ? 'block' : 'none';
+  const fs = wantFwd ? 'block' : 'none';
+  if (backBtn.style.display !== bs) backBtn.style.display = bs;
+  if (fwdBtn.style.display !== fs) fwdBtn.style.display = fs;
+}
+function enterViewMode() {
+  viewPrevHint = hint.innerHTML;
+  viewContShown = contBtn.style.display !== 'none';
+  contBtn.style.display = 'none';
+  viewPanels = [];
+  document.querySelectorAll('.palette, .swpanel').forEach(p => {
+    if (p.style.display !== 'none') { viewPanels.push(p); p.style.display = 'none'; }
+  });
+}
+function leaveViewMode() {
+  viewStage = null;
+  hint.innerHTML = viewPrevHint;
+  if (viewContShown) contBtn.style.display = 'block';
+  viewPanels.forEach(p => { p.style.display = 'block'; });
+  viewPanels = [];
+}
+/* real rollback: oven → mix-ins (only before the tray goes in) */
+function rollbackToMixins() {
+  stage = 2;
+  state = 's2wait';
+  setHUDStage(2, 'dress it up');
+  setChecklist('<span class="t">Mix-ins</span>' + chipRow('scoops', 'Shape ×6 onto the tray') + chipRow('tops', 'Toppings — optional'));
+  markChip('scoops');
+  if (s2.topped > 0) markChip('tops');
+  const from = tray2.position.clone();
+  tween(1.0, k => tray2.position.lerpVectors(from, new THREE.Vector3(7.4, 0, 0.1), k));
+  contBtn.textContent = 'To the oven →';
+  contBtn.style.display = 'block';
+  dollyTo(2, () => {
+    state = 'top';
+    setHint('More toppings? Sprinkle away — or head back to the oven');
+  });
+}
+/* real rollback: packing → frosting (only before the bow is tied); unpacked cookies ride the tray back */
+function rollbackToFrost() {
+  stage = 4;
+  state = 'frost';
+  swpanel.style.display = 'none';
+  setHUDStage(4, 'frosting');
+  setChecklist('<span class="t">Frosting (optional)</span>' + chipRow('base', 'Melt a base in the pot') + chipRow('fmilk', 'Stir in milk') + chipRow('frost', 'Frost any cookies'));
+  if (s4f.base) markChip('base');
+  if (s4f.milk) markChip('fmilk');
+  if (s4f.frosted > 0) markChip('frost');
+  moveCratesTo(12.6);
+  document.getElementById('frostStylePanel').style.display = 'block';
+  /* bring EVERY cookie back to the tray — leaving boxed ones behind stranded the station */
+  s4.packed = 0;
+  scoops.forEach((s, i) => {
+    s.userData.packed = false;
+    s.userData.boxSlot = undefined;
+    s.scale.set(1, 1, 1);
+    if (s.parent !== tray2) {
+      tray2.attach(s);
+      const f2 = s.position.clone();
+      tween(0.6, k => s.position.lerpVectors(f2, SLOT[i], k));
+    }
+  });
+  const from = tray2.position.clone();
+  tween(1.2, k => tray2.position.lerpVectors(from, new THREE.Vector3(24.85, 0, 0.3), k));
+  contBtn.textContent = 'To packing →';
+  contBtn.style.display = 'block';
+  dollyTo(4, () => setHint('Frost, drizzle or sprinkle — then pack them again'));
+}
+backBtn.addEventListener('click', () => {
+  if (dragging) return;
+  const cur = viewStage ?? stage;
+  if (cur <= 1) return;
+  /* editable rollbacks where the process genuinely allows it */
+  if (viewStage === null && stage === 3 && (state === 'dial' || state === 'load')) { moveCratesTo(0); return rollbackToMixins(); }
+  if (viewStage === null && stage === 5 && (state === 'pack' || state === 'decor')) return rollbackToFrost();
+  /* otherwise: look around, nothing changes */
+  if (viewStage === null) enterViewMode();
+  viewStage = cur - 1;
+  dollyTo(viewStage);
+  setHint('Just looking around — <b>Return</b> when ready');
+  snd(300, 0.06, 'triangle', 0.07);
+});
+fwdBtn.addEventListener('click', () => {
+  if (viewStage === null) return;
+  dollyTo(stage);
+  leaveViewMode();
+  snd(420, 0.06, 'triangle', 0.07);
+});
+contBtn.addEventListener('click', () => {
+  /* state-gated so a double-click can't fire two transitions */
+  if (stage === 2 && state === 'top') {
+    contBtn.style.display = 'none';
+    document.getElementById('shapePanel').style.display = 'none';
+    startStage3();
+  } else if (stage === 4 && state === 'frost') {
+    contBtn.style.display = 'none';
+    document.getElementById('frostStylePanel').style.display = 'none';
+    startPack();
+  }
+});
+
+/* debug handle for automated testing */
+window.__game = {
+  screenPos(obj, yOff = 0.25) {
+    const v = new THREE.Vector3();
+    obj.getWorldPosition(v); v.y += yOff;
+    v.project(camera);
+    return { x: (v.x + 1) / 2 * innerWidth, y: (-v.y + 1) / 2 * innerHeight };
+  },
+  probe(name) {
+    if (name.startsWith('scoop')) return scoops[+name.slice(5)];
+    if (name.startsWith('top_')) return crates.find(c => c.userData.topping.id === name.slice(4));
+    const map = { bowl: bowlG, mixer: mixerG, dough2, tray: tray2, chips: crates.find(c => c.userData.topping.id === 'chips'), dial: dialG, oven, box: box4, lid: lid4, pot: potG, choc: chocBar, white: whiteBar, berry: berryG, fmilk: milkF, pist: pistJar, blueb: bluebBowl, carjug: caramelJug };
+    return map[name] || ingredients.find(i => i.userData.name === name);
+  },
+  ingredients, bowlG, camera,
+  step(dt) { updateSim(dt); renderer.render(scene, camera); },
+  sim(dt) { updateSim(dt); }, /* advance without rendering — cheap for long scripted runs */
+  render() { renderer.render(scene, camera); },
+  get state() { return state; },
+  get stage() { return stage; },
+  get added() { return added; },
+  get mixProgress() { return mixProgress; },
+  get bakeP() { return s3.bakeP; },
+  get scoopCount() { return scoops.length; },
+  get packed() { return s4.packed; },
+  get frostReady() { return s4f.ready; },
+  get frosted() { return s4f.frosted; },
+  get topped() { return s2.topped; },
+  get flavorId() { return flavor.id; },
+  get draggingName() { return dragging ? (dragging.userData.name || dragging.userData.topping?.id || 'obj') : null; },
+};
+
+const clock = new THREE.Clock();
+function updateSim(dt) {
+  /* keep camera + object matrices in sync even when no frame is rendered (raycasts stay correct) */
+  camera.updateMatrixWorld();
+  camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  scene.updateMatrixWorld();
+  updTweens(dt);
+  /* droplets fall */
+  for (let i = droplets.length - 1; i >= 0; i--) {
+    const d = droplets[i];
+    d.userData.vy -= 9 * dt;
+    d.position.x += d.userData.vx * dt;
+    d.position.z += d.userData.vz * dt;
+    d.position.y += d.userData.vy * dt;
+    if (d.userData.spin) { d.rotation.x += d.userData.spin * dt; d.rotation.z += d.userData.spin * 0.7 * dt; }
+    if (d.position.y < (d.userData.floorY ?? 0.34)) {
+      if (d.userData.onLand) d.userData.onLand(d);
+      else {
+        contents.scale.x *= 1.02; contents.scale.z *= 1.02;
+        setTimeout(() => { contents.scale.x /= 1.02; contents.scale.z /= 1.02; }, 90);
+      }
+      scene.remove(d);
+      droplets.splice(i, 1);
+    }
+  }
+  /* swirl energy is consumed at a capped rate so mixing always takes real stirring time */
+  if (swirlBank > 0 && state === 'mix') {
+    const use = Math.min(swirlBank, 7 * dt);
+    swirlBank -= use;
+    const before = mixProgress;
+    setProgress(mixProgress + use / (Math.PI * 6));
+    if (Math.floor(before * 8) !== Math.floor(mixProgress * 8)) snd(260 + mixProgress * 240, 0.05, 'triangle', 0.06);
+  }
+  /* oven progression */
+  if (s3.baking) {
+    s3.bakeP = Math.min(1, s3.bakeP + dt / 14);
+    bakemarker.style.left = (s3.bakeP * 100).toFixed(1) + '%';
+    scoops.forEach(s => {
+      let c = bakeColor(s3.bakeP);
+      if (s.userData.tint) c = c.lerp(new THREE.Color(s.userData.tint), 0.3 * (1 - s3.bakeP * 0.5));
+      s.userData.meshes.forEach(m => m.material.color.copy(c));
+    });
+    ovenGlowMat.color.setHSL(0.07, 0.75, 0.05 + 0.28 * Math.min(1, s3.bakeP * 1.5));
+    if (s3.bakeP > 0.95 && !s3.warned2) { s3.warned2 = true; setHint('<b>Pull them out!</b> They’re burning!'); snd(880, 0.15, 'square', 0.1); }
+    else if (s3.bakeP > 0.8 && !s3.warned1) { s3.warned1 = true; setHint('<b>Browning fast</b> — pull the tray now'); snd(700, 0.1, 'square', 0.08); }
+  }
+  navUpdate();
+}
+/* keep the simulation alive when the tab is hidden (rAF pauses there) */
+setInterval(() => { if (document.hidden) updateSim(0.05); }, 50);
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  updateSim(dt);
+  /* drop ring pulse while dragging */
+  if (dragging && stage === 1) {
+    dropRing.position.set(bowlG.position.x, 0.02, bowlG.position.z);
+    const s = 1 + Math.sin(performance.now() / 250) * 0.05;
+    dropRing.scale.setScalar(s);
+    if (ringMat.opacity === 0) ringMat.opacity = 0.55;
+  } else if (state !== 'mix') {
+    ringMat.opacity = Math.max(0, ringMat.opacity - dt * 2);
+  }
+  /* idle bob for un-used ingredients */
+  const tm = performance.now() / 1000;
+  ingredients.forEach((g, i) => {
+    if (!g.userData.used && g !== dragging) g.position.y = Math.sin(tm * 1.4 + i) * 0.012;
+  });
+  renderer.render(scene, camera);
+}
+loop();
+</script>
