@@ -280,9 +280,51 @@
   <div class="panel credit">dough · mix-ins · bake · pack</div>
 </div>
 
-<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<!-- Boot watchdog: a CLASSIC script, so it still runs if the module below fails.
+     Without this a module error is completely silent — you get the HUD and a dead canvas. -->
+<script>
+window.__BOOT = { errors: [], t0: Date.now() };
+addEventListener('error', e => {
+  window.__BOOT.errors.push((e.message || 'error') + (e.filename ? ' @' + e.filename.split('/').pop() + ':' + e.lineno : ''));
+}, true);
+addEventListener('unhandledrejection', e => { window.__BOOT.errors.push('promise: ' + (e.reason && e.reason.message || e.reason)); });
+(function () {
+  var cv = document.getElementById('c');
+  var EVC = window.__EVC = { pointerdown: 0, pointermove: 0, pointerup: 0, pointercancel: 0,
+                             touchstart: 0, touchmove: 0, touchend: 0, click: 0 };
+  Object.keys(EVC).forEach(function (t) { cv.addEventListener(t, function () { EVC[t]++; }, true); });
+  var dbg = /[?&]debug/.test(location.search);
+  function panel(bg) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:99;max-width:94vw;' +
+      'background:' + bg + ';color:#fff;font:11px/1.45 ui-monospace,monospace;padding:7px 11px;' +
+      'border-radius:8px;pointer-events:none;white-space:pre-wrap;text-align:left';
+    document.body.appendChild(d); return d;
+  }
+  setTimeout(function () {
+    if (!window.__game) {
+      panel('#8b1a1a').textContent = 'The game did not start.\n' +
+        (window.__BOOT.errors.join('\n') || 'no error reported') +
+        '\n' + navigator.userAgent.slice(0, 110);
+    }
+  }, 4500);
+  if (dbg) {
+    var d = panel('#000c'); d.style.color = '#0f0';
+    setInterval(function () {
+      var g = window.__game;
+      d.textContent =
+        'down ' + EVC.pointerdown + '  move ' + EVC.pointermove + '  up ' + EVC.pointerup + '  cancel ' + EVC.pointercancel + '\n' +
+        'touch ' + EVC.touchstart + '/' + EVC.touchmove + '/' + EVC.touchend + '   click ' + EVC.click + '\n' +
+        'booted ' + !!g + '   held ' + ((g && g.draggingName) || '-') + '   err ' + window.__BOOT.errors.length + '\n' +
+        innerWidth + 'x' + innerHeight + ' dpr' + devicePixelRatio + '  ' + (screen.orientation ? screen.orientation.type : '?');
+    }, 150);
+  }
+})();
+</script>
 <script type="module">
-import * as THREE from 'three';
+/* Relative path, NOT an importmap bare specifier: importmaps need Safari 16.4+,
+   and on older iOS the whole module silently fails to load. */
+import * as THREE from './three.module.js';
 
 /* ---------------- themes ---------------- */
 const THEMES = {
@@ -1427,20 +1469,6 @@ canvas.addEventListener('click', e => {
   canvas.dispatchEvent(mk('pointerup'));
 });
 
-if (/[?&]debug/.test(location.search)) {
-  const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:99;' +
-    'background:#000c;color:#0f0;font:11px/1.45 ui-monospace,monospace;padding:6px 10px;' +
-    'border-radius:8px;pointer-events:none;white-space:pre;text-align:left';
-  document.body.appendChild(d);
-  setInterval(() => {
-    d.textContent =
-      `down ${EV.pointerdown}  move ${EV.pointermove}  up ${EV.pointerup}  cancel ${EV.pointercancel}\n` +
-      `touch ${EV.touchstart}/${EV.touchmove}/${EV.touchend}   click ${EV.click}\n` +
-      `picked ${EV.picked}   held ${__game && __game.draggingName || '-'}\n` +
-      `coarse ${COARSE}  ${innerWidth}x${innerHeight} dpr${devicePixelRatio}  ${screen.orientation ? screen.orientation.type : '?'}`;
-  }, 150);
-}
 
 /* ---------------- main loop ---------------- */
 /* ================= stages 2-5 ================= */
