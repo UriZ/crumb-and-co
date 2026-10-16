@@ -195,22 +195,28 @@
     .doneCard button { font-size: 13px; padding: 9px 18px; }
   }
   /* the bakeshop counter is wide — ask for landscape on tall phones */
+  /* A SUGGESTION, never a blocker: it sits at the top, is dismissible, and must not
+     eat touches — a full-screen overlay here silently swallowed every tap. */
   #rotate { display: none; }
   @media (max-width: 950px) and (orientation: portrait) {
-    #rotate { display: flex; position: fixed; inset: 0; z-index: 60;
-              flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-              background: var(--ground); color: var(--hud-ink);
-              font-family: var(--ui); text-align: center; padding: 30px; }
-    #rotate .big { font-family: var(--disp); font-size: 26px; color: var(--acc); }
-    #rotate .ic { font-size: 44px; }
-    #rotate p { font-size: 14px; color: var(--hud-soft); max-width: 22em; line-height: 1.5; }
+    #rotate { display: flex; position: fixed; left: 8px; right: 8px; bottom: 64px; z-index: 40;
+              align-items: center; gap: 10px; pointer-events: auto;
+              background: #2a1f16f2; color: #f6ebda; border-radius: 12px;
+              font-family: var(--ui); padding: 10px 12px; }
+    #rotate.gone { display: none; }
+    #rotate .big { font-family: var(--disp); font-size: 14px; color: #f2b84b; }
+    #rotate .ic { font-size: 20px; }
+    #rotate p { font-size: 11.5px; line-height: 1.35; flex: 1; margin: 0; }
+    #rotate button { font-family: var(--ui); font-weight: 700; font-size: 12px; cursor: pointer;
+                     background: #f2b84b; color: #2a1f16; border: 0; border-radius: 999px;
+                     padding: 7px 12px; white-space: nowrap; }
   }
 </style>
 
 <div id="app" data-dir="M">
   <canvas id="c"></canvas>
 
-  <div id="rotate"><span class="ic">↻</span><span class="big">Turn your phone</span><p>Crumb &amp; Co. runs along a long bakery counter — rotate to landscape for the full view.</p></div>
+  <div id="rotate"><span class="ic">↻</span><p><span class="big">Rotate for the full view</span><br>The bakery counter is wide — landscape fits more in.</p><button id="rotateOk">Play anyway</button></div>
 
   <div class="hud-top">
     <div class="panel brand"><span class="logo">Crumb &amp; Co.</span><span class="stage" id="stageName">stage 1 · the dough</span></div>
@@ -285,7 +291,16 @@
 <!-- Boot watchdog: a CLASSIC script, so it still runs if the module below fails.
      Without this a module error is completely silent — you get the HUD and a dead canvas. -->
 <script>
-window.__BUILD = 'b5-1016';
+window.__BUILD = 'b6-1016';
+addEventListener('DOMContentLoaded', function () {
+  var r = document.getElementById('rotate'), ok = document.getElementById('rotateOk');
+  if (!r || !ok) return;
+  if (sessionStorage.getItem('rotateDismissed')) r.classList.add('gone');
+  ok.addEventListener('click', function () {
+    r.classList.add('gone');
+    try { sessionStorage.setItem('rotateDismissed', '1'); } catch (e) {}
+  });
+});
 window.__BOOT = { errors: [], t0: Date.now() };
 addEventListener('error', e => {
   window.__BOOT.errors.push((e.message || 'error') + (e.filename ? ' @' + e.filename.split('/').pop() + ':' + e.lineno : ''));
@@ -383,11 +398,25 @@ const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 50);
 camera.position.set(0, 2.4, 5.2);
 camera.lookAt(0, 0.55, -0.2);
 
+/* per-station camera framing (declared here: resize() runs during init) */
+const STZ = [5.2, 6.3, 5.2, 6.5, 5.4];
+const STY = [2.4, 2.45, 2.05, 2.45, 2.2];
+/* On a narrow/portrait screen the horizontal field of view collapses, so the
+   station falls off both sides. Pull back (capped) to bring it back into frame. */
+function fitMul() { const a = camera.aspect; return a < 1.35 ? Math.min(2.25, 1.35 / a) : 1; }
+let camX = 0, camStage = 1;
+function placeCam(x, n) {
+  const m = fitMul();
+  camX = x; camStage = n;
+  camera.position.set(x, 0.55 + (STY[n - 1] - 0.55) * (1 + (m - 1) * 0.45), STZ[n - 1] * m);
+  camera.lookAt(x, 0.55, -0.2);
+}
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  placeCam(camX, camStage);
 }
 addEventListener('resize', resize); resize();
 
@@ -1652,15 +1681,17 @@ buildPalette(document.getElementById('shapeRow'), SHAPES, () => 0xe6cf9d, s => {
   snd(420, 0.06, 'triangle', 0.08);
 }, SHAPES[0]);
 /* per-station camera pull-back — the topping/pantry stations need a wider view */
-const STZ = [5.2, 6.3, 5.2, 6.5, 5.4];
-const STY = [2.4, 2.45, 2.05, 2.45, 2.2];
 function dollyTo(n, done) {
   const x0 = camera.position.x, x1 = STX[n - 1];
   const z0 = camera.position.z, z1 = STZ[n - 1], y0 = camera.position.y;
   tween(1.2, k => {
-    const x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
-    camera.position.set(x, y0 + (STY[n - 1] - y0) * k, z);
+    const x = x0 + (x1 - x0) * k;
+    camStage = n;
+    const m = fitMul();
+    const zT = STZ[n - 1] * m, yT = 0.55 + (STY[n - 1] - 0.55) * (1 + (m - 1) * 0.45);
+    camera.position.set(x, y0 + (yT - y0) * k, z0 + (zT - z0) * k);
     camera.lookAt(x, 0.55, -0.2);
+    camX = x;
   }, done);
 }
 /* point visually under a dragged (floating) object at the target's height — what the player perceives as "where it is" */
