@@ -1194,6 +1194,7 @@ canvas.addEventListener('pointerdown', e => {
   }
   downPt = { x: e.clientX, y: e.clientY, t: performance.now() };
   movedFar = false;
+  setTimeout(() => { if (typeof EV === 'object') EV.picked = (dragging && (dragging.userData.name || dragging.userData.topping?.id)) || 'none'; }, 0);
   if (stage === 2) {
     if (state === 'portion' || state === 'top') {
       const pool = [...crates, ...dyeBottles];
@@ -1406,9 +1407,40 @@ function release() {
 }
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
-/* keep mobile browsers from turning a drag into a scroll/zoom and cancelling our pointers */
-['touchstart', 'touchmove', 'touchend'].forEach(t =>
-  canvas.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false }));
+/* ---- input diagnostics + a click fallback -------------------------------
+   Pointer events are the main path. If a browser mangles them (cancelled
+   touches, missing pointerup) a plain `click` still arrives from any tap, so
+   we replay it through the same pipeline as a tap. */
+const EV = { pointerdown: 0, pointermove: 0, pointerup: 0, pointercancel: 0,
+             touchstart: 0, touchmove: 0, touchend: 0, click: 0, picked: '-' };
+['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'touchstart', 'touchmove', 'touchend']
+  .forEach(t => canvas.addEventListener(t, () => { EV[t]++; }, true));
+
+let lastRealPointer = -1e9;
+canvas.addEventListener('pointerdown', e => { if (e.pointerId !== 999) lastRealPointer = performance.now(); }, true);
+canvas.addEventListener('click', e => {
+  EV.click++;
+  if (performance.now() - lastRealPointer < 800) return;  /* pointer path already handled it */
+  const mk = ty => new PointerEvent(ty, { pointerId: 999, clientX: e.clientX, clientY: e.clientY,
+    bubbles: true, isPrimary: true, button: 0, buttons: ty === 'pointerup' ? 0 : 1 });
+  canvas.dispatchEvent(mk('pointerdown'));
+  canvas.dispatchEvent(mk('pointerup'));
+});
+
+if (/[?&]debug/.test(location.search)) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:99;' +
+    'background:#000c;color:#0f0;font:11px/1.45 ui-monospace,monospace;padding:6px 10px;' +
+    'border-radius:8px;pointer-events:none;white-space:pre;text-align:left';
+  document.body.appendChild(d);
+  setInterval(() => {
+    d.textContent =
+      `down ${EV.pointerdown}  move ${EV.pointermove}  up ${EV.pointerup}  cancel ${EV.pointercancel}\n` +
+      `touch ${EV.touchstart}/${EV.touchmove}/${EV.touchend}   click ${EV.click}\n` +
+      `picked ${EV.picked}   held ${__game && __game.draggingName || '-'}\n` +
+      `coarse ${COARSE}  ${innerWidth}x${innerHeight} dpr${devicePixelRatio}  ${screen.orientation ? screen.orientation.type : '?'}`;
+  }, 150);
+}
 
 /* ---------------- main loop ---------------- */
 /* ================= stages 2-5 ================= */
@@ -1824,7 +1856,7 @@ function nearestIn(dragObj, objs, yOff, maxFrac = 0.1) {
 const COARSE = matchMedia('(pointer: coarse)').matches;
 function pickByScreen(list, px, py, yOff, frac) {
   /* fingers need a far bigger catch radius than a mouse cursor */
-  let best = null, bd = COARSE ? Math.max(46, sdim() * frac * 1.9) : sdim() * frac;
+  let best = null, bd = COARSE ? Math.max(56, sdim() * frac * 2.0) : Math.max(40, sdim() * frac);
   const wp = new THREE.Vector3();
   list.forEach(c => {
     if (c.userData.used) return;
