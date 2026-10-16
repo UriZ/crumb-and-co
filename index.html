@@ -326,7 +326,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 50);
-camera.position.set(0, 1.85, 5.0);
+camera.position.set(0, 2.4, 5.2);
 camera.lookAt(0, 0.55, -0.2);
 
 function resize() {
@@ -529,7 +529,7 @@ const spoonPivot = new THREE.Group();
 spoonPivot.add(spoonG);
 spoonPivot.visible = false; /* spoon appears only when mixing by hand */
 bowlG.add(bowl, rim, contents, streak, spoonPivot);
-const BOWL_HOME = new THREE.Vector3(0.35, 0, 0.3);
+const BOWL_HOME = new THREE.Vector3(0.42, 0, 0.02);
 bowlG.position.copy(BOWL_HOME);
 scene.add(bowlG);
 
@@ -548,6 +548,32 @@ dropRing.rotation.x = -Math.PI / 2;
 dropRing.position.set(BOWL_HOME.x, 0.02, BOWL_HOME.z);
 scene.add(dropRing);
 
+/* a strawberry that reads as one: tapered body, star calyx, seed speckle */
+function makeStrawberry(r) {
+  const b = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), toon(0xc9303f));
+  body.scale.set(1, 1.25, 1);
+  body.position.y = r * 1.05;
+  /* pinch the bottom to a point */
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(r * 0.82, r * 1.1, 14), toon(0xc9303f));
+  tip.rotation.x = Math.PI;
+  tip.position.y = r * 0.42;
+  b.add(tip, body);
+  for (let i = 0; i < 7; i++) {
+    const a = i * 2.39, rr = r * 0.72;
+    const seed = new THREE.Mesh(new THREE.SphereGeometry(r * 0.1, 6, 5), toon(0xf2d98a));
+    seed.position.set(Math.cos(a) * rr, r * (0.75 + (i % 3) * 0.35), Math.sin(a) * rr);
+    b.add(seed);
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(r * 0.3, r * 0.6, 4), toon(0x6f9f52));
+    leaf.position.set(Math.cos(a) * r * 0.5, r * 2.1, Math.sin(a) * r * 0.5);
+    leaf.rotation.set(0.9 * Math.cos(a + Math.PI / 2), 0, -0.9 * Math.sin(a + Math.PI / 2));
+    b.add(leaf);
+  }
+  return b;
+}
 /* ---- dough flavors: the dough BECOMES whatever flavor ingredient you toss in ---- */
 const FLAVORS = {
   classic: { id: 'classic', label: 'Classic', dough: 0xe6cf9d },
@@ -607,7 +633,7 @@ function labelPlane(text, w, h, fg) {
   label.position.set(0, 0.26, 0.112);
   g.add(bag, crimp, label);
   makeHit(g, 0.55, 0.72, 0.5);
-  reg(g, 'flour', -1.5, 0xf7f2e4, 'powder', 1.0);
+  reg(g, 'flour', -1.52, 0xf7f2e4, 'powder', 0.85);
 }
 /* eggs — crack open over the bowl */
 {
@@ -619,7 +645,7 @@ function labelPlane(text, w, h, fg) {
     g.add(egg);
   });
   makeHit(g, 0.5, 0.45, 0.45);
-  reg(g, 'eggs', -0.8, 0xf2c14e, 'crack', 1.0);
+  reg(g, 'eggs', -0.78, 0xf2c14e, 'crack', 0.85);
 }
 /* butter — wrapped stick, one end unwrapped */
 {
@@ -632,7 +658,7 @@ function labelPlane(text, w, h, fg) {
   label.position.set(-0.07, 0.085, 0.108);
   g.add(wrap, stick, label);
   makeHit(g, 0.62, 0.4, 0.45);
-  reg(g, 'butter', -0.1, 0xf0c75e, 'cubes', 1.0);
+  reg(g, 'butter', -0.04, 0xf0c75e, 'cubes', 0.85);
 }
 /* milk — glass bottle with foil cap */
 {
@@ -650,7 +676,7 @@ function labelPlane(text, w, h, fg) {
   cap.position.y = 0.53;
   g.add(bottle, milkIn, cap);
   makeHit(g, 0.45, 0.68, 0.45);
-  reg(g, 'milk', 0.6, 0xf7f4ec, 'stream', 1.0);
+  reg(g, 'milk', 0.7, 0xf7f4ec, 'stream', 0.85);
 }
 /* sugar — glass jar, visible fill, steel lid */
 {
@@ -666,21 +692,20 @@ function labelPlane(text, w, h, fg) {
   label.position.set(0, 0.16, 0.152);
   g.add(jarGlass, fill, lid, label);
   makeHit(g, 0.5, 0.6, 0.45);
-  reg(g, 'sugar', 1.3, 0xeedfb8, 'granules', 1.0);
+  reg(g, 'sugar', 1.44, 0xeedfb8, 'granules', 0.85);
 }
 /* flavor ingredients — front row; toss one in the bowl and the dough becomes that flavor */
 function regFlavor(g, name, x, dropColor, style, flav) {
-  reg(g, name, x, dropColor, style, 1.42);
+  reg(g, name, x, dropColor, style, 1.3);
   g.userData.flavor = FLAVORS[flav];
 }
 {
   const g = new THREE.Group();
-  [-0.05, 0.07].forEach((dx, i) => {
-    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 10), toon(0xc1434c));
-    berry.scale.y = 1.15; berry.position.set(dx, 0.07, i * 0.04 - 0.02);
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.035, 6), toon(0x7fa377));
-    leaf.position.set(dx, 0.15, i * 0.04 - 0.02);
-    g.add(berry, leaf);
+  [[-0.06, -0.02], [0.07, 0.03]].forEach(([dx, dz], i) => {
+    const b = makeStrawberry(0.062);
+    b.position.set(dx, 0, dz);
+    b.rotation.y = i * 1.2;
+    g.add(b);
   });
   makeHit(g, 0.35, 0.3, 0.3);
   regFlavor(g, 'strawberries', -1.2, 0xd16a74, 'cubes', 'strawberry');
@@ -745,7 +770,7 @@ DYES.forEach((dy, i) => {
   cap.position.y = 0.19;
   g.add(body, cap);
   makeHit(g, 0.3, 0.3, 0.26);
-  reg(g, 'dye_' + dy.id, -1.1 + i * 0.44, dy.c, null, 1.72);
+  reg(g, 'dye_' + dy.id, -1.18 + i * 0.47, dy.c, null, 1.74);
   g.userData.dye = dy.c;
   dyeBottles.push(g);
 });
@@ -1399,8 +1424,8 @@ const TOPPINGS = [
   { id: 'oreo', label: 'Oreo bits', short: 'OREO', colors: [0x1d1a18], r: 0.028, kind: 'oreo' },
   { id: 'caramel', label: 'Salted caramel', short: 'CARAMEL', colors: [0xd29238, 0xc07f2c], r: 0.026, kind: 'chunk' },
   { id: 'pretzel', label: 'Pretzel', short: 'PRETZEL', colors: [0x9a6a38], r: 0.024, kind: 'pretzel' },
-  { id: 'kinder', label: 'Kinder bits', short: 'KINDER', colors: [0xf2e8d6], r: 0.028, kind: 'kinder' },
-  { id: 'whitechoc', label: 'White choc', short: 'W.CHOC', colors: [0xefe3c8, 0xf6edd8], r: 0.028, kind: 'chunk' },
+  { id: 'kinder', label: 'Kinder bits', short: 'KINDER', colors: [0xf9f0dd], r: 0.03, kind: 'kinder' },
+  { id: 'whitechoc', label: 'White choc', short: 'W.CHOC', colors: [0xfbf4e2, 0xf6ecd4], r: 0.032, kind: 'gem' },
   { id: 'mallow', label: 'Marshmallows', short: 'MALLOW', colors: [0xfff6f0, 0xf2c5ce], r: 0.03, kind: 'mallow' },
   { id: 'peanut', label: 'Peanuts', short: 'PEANUT', colors: [0xd9b071, 0xcda15f], r: 0.026, kind: 'peanut' },
   { id: 'pecan', label: 'Sweet pecans', short: 'PECAN', colors: [0x8a5a30, 0x7a4c26], r: 0.03, kind: 'chunk' },
@@ -1467,7 +1492,7 @@ function makeTopPiece(top, s = 1) {
       break;
     case 'wafer': {
       m = new THREE.Group();
-      [0xd9b98a, 0xf2e6cc, 0xd9b98a].forEach((wc, i2) => {
+      [0xc9a06a, 0x7a4e28, 0xc9a06a].forEach((wc, i2) => {
         const layer = new THREE.Mesh(new THREE.BoxGeometry(r * 2, r * 0.45, r * 1.8), toon(wc));
         layer.position.y = (i2 - 1) * r * 0.45;
         m.add(layer);
@@ -1555,13 +1580,14 @@ buildPalette(document.getElementById('shapeRow'), SHAPES, () => 0xe6cf9d, s => {
   snd(420, 0.06, 'triangle', 0.08);
 }, SHAPES[0]);
 /* per-station camera pull-back — the topping/pantry stations need a wider view */
-const STZ = [5.0, 6.3, 5.2, 6.5, 5.4];
+const STZ = [5.2, 6.3, 5.2, 6.5, 5.4];
+const STY = [2.4, 2.45, 2.05, 2.45, 2.2];
 function dollyTo(n, done) {
   const x0 = camera.position.x, x1 = STX[n - 1];
-  const z0 = camera.position.z, z1 = STZ[n - 1];
+  const z0 = camera.position.z, z1 = STZ[n - 1], y0 = camera.position.y;
   tween(1.2, k => {
     const x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
-    camera.position.set(x, 1.85 + (z - 5) * 0.34, z);
+    camera.position.set(x, y0 + (STY[n - 1] - y0) * k, z);
     camera.lookAt(x, 0.55, -0.2);
   }, done);
 }
@@ -2052,9 +2078,15 @@ potG.traverse(m => { if (m.isMesh && m.material.visible !== false) m.castShadow 
 scene.add(potG);
 addOutlinesTo(potG);
 
-function makeFrostItem(build, x, fcolor, z = 1.15) {
+function makeFrostItem(build, x, fcolor, z = 1.15, label) {
   const g = new THREE.Group();
   build(g);
+  if (label) {
+    const tag = labelPlane(label, 0.3, 0.085, '#5a3a28');
+    tag.position.set(0, 0.012, 0.23);
+    tag.rotation.x = -Math.PI / 2.15;
+    g.add(tag);
+  }
   makeHit(g, 0.5, 0.6, 0.45);
   g.position.set(x, 0, z);
   g.userData.home = g.position.clone();
@@ -2070,23 +2102,22 @@ const chocBar = makeFrostItem(g => {
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.14), toon(0x5a3a28));
   ridge.position.y = 0.08;
   g.add(bar, ridge);
-}, 23.60, 0x6d4530, 1.5);
+}, 23.60, 0x6d4530, 1.5, 'CHOC');
 const whiteBar = makeFrostItem(g => {
   const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.18), toon(0xf2e8d6));
   bar.position.y = 0.035;
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.14), toon(0xf8f1e4));
   ridge.position.y = 0.08;
   g.add(bar, ridge);
-}, 24.06, 0xf2e8d6, 1.5);
+}, 24.06, 0xf2e8d6, 1.5, 'W.CHOC');
 const berryG = makeFrostItem(g => {
-  [-0.06, 0.07].forEach((dx, i) => {
-    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), toon(0xc1434c));
-    berry.scale.y = 1.15; berry.position.set(dx, 0.08, i * 0.05 - 0.02);
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.04, 6), toon(0x7fa377));
-    leaf.position.set(dx, 0.17, i * 0.05 - 0.02);
-    g.add(berry, leaf);
+  [[-0.07, -0.02], [0.07, 0.03]].forEach(([dx, dz], i) => {
+    const b = makeStrawberry(0.07);
+    b.position.set(dx, 0, dz);
+    b.rotation.y = i * 1.2;
+    g.add(b);
   });
-}, 24.52, 0xd97f93, 1.5);
+}, 24.52, 0xd97f93, 1.5, 'BERRIES');
 const milkF = makeFrostItem(g => {
   const prof = [
     new THREE.Vector2(0, 0), new THREE.Vector2(0.085, 0.005), new THREE.Vector2(0.09, 0.2),
@@ -2099,7 +2130,7 @@ const milkF = makeFrostItem(g => {
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.028, 10), toon(0xb5484a));
   cap.position.y = 0.385;
   g.add(bottle, milkIn, cap);
-}, 26.42, 0xf7f4ec, 1.5);
+}, 26.42, 0xf7f4ec, 1.5, 'MILK');
 /* three more bases: pistachio paste, blueberry, caramel sauce */
 const pistJar = makeFrostItem(g => {
   const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.16, 14), toon(0x8fae64));
@@ -2107,7 +2138,7 @@ const pistJar = makeFrostItem(g => {
   const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.035, 14), toon(0x5c7340));
   lid.position.y = 0.175;
   g.add(jar, lid);
-}, 24.98, 0x8fae64, 1.5);
+}, 24.98, 0x8fae64, 1.5, 'PISTACHIO');
 const bluebBowl = makeFrostItem(g => {
   const bowl2 = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.08, 0.09, 14), toon(0xf2ead9));
   bowl2.position.y = 0.045;
@@ -2117,14 +2148,14 @@ const bluebBowl = makeFrostItem(g => {
     g.add(b2);
   }
   g.add(bowl2);
-}, 25.44, 0x7d6fae, 1.5);
+}, 25.44, 0x7d6fae, 1.5, 'BLUEBERRY');
 const caramelJug = makeFrostItem(g => {
   const jug = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.17, 14), toon(0xc98a3e, { transparent: true, opacity: 0.94 }));
   jug.position.y = 0.085;
   const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.06, 10), toon(0xb3782f));
   spout.position.y = 0.19;
   g.add(jug, spout);
-}, 25.90, 0xc98a3e, 1.5);
+}, 25.90, 0xc98a3e, 1.5, 'CARAMEL');
 
 const frostBases = [chocBar, whiteBar, berryG, pistJar, bluebBowl, caramelJug];
 function addToPot(item) {
