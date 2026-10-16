@@ -283,6 +283,7 @@
 <!-- Boot watchdog: a CLASSIC script, so it still runs if the module below fails.
      Without this a module error is completely silent — you get the HUD and a dead canvas. -->
 <script>
+window.__BUILD = 'b5-1016';
 window.__BOOT = { errors: [], t0: Date.now() };
 addEventListener('error', e => {
   window.__BOOT.errors.push((e.message || 'error') + (e.filename ? ' @' + e.filename.split('/').pop() + ':' + e.lineno : ''));
@@ -301,6 +302,15 @@ addEventListener('unhandledrejection', e => { window.__BOOT.errors.push('promise
       'border-radius:8px;pointer-events:none;white-space:pre-wrap;text-align:left';
     document.body.appendChild(d); return d;
   }
+  /* always-visible build + boot stamp, so "still broken" can be told apart from
+     "phone is serving a cached old build" without any guessing */
+  setTimeout(function () {
+    var v = document.createElement('div');
+    v.style.cssText = 'position:fixed;left:4px;top:4px;z-index:98;background:#0008;color:#fff;' +
+      'font:10px/1.3 ui-monospace,monospace;padding:3px 6px;border-radius:6px;pointer-events:none';
+    v.textContent = window.__BUILD + (window.__game ? ' ok' : ' NO-BOOT');
+    document.body.appendChild(v);
+  }, 2500);
   setTimeout(function () {
     if (!window.__game) {
       panel('#8b1a1a').textContent = 'The game did not start.\n' +
